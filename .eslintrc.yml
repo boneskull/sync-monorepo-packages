@@ -1,0 +1,20 @@
+root: true
+parser: babel-eslint
+extends:
+  - semistandard
+  - plugin:prettier/recommended
+rules:
+  standard/computed-property-even-spacing: off
+overrides:
+  - files:
+      - .mocharc.js
+    parserOptions:
+      sourceType: script
+  - files:
+      - test/**/*.spec.js
+    env:
+      mocha: true
+    globals:
+      expect: false
+      sinon: false
+      proxyquire: false
