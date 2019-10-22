@@ -228,7 +228,7 @@ function normalizePkgPath(pkgPath) {
 function syncPackageJsons({
   sourcePkgPath = path.join(process.cwd(), 'package.json'),
   packageDirs = [],
-  dryRun = true,
+  dryRun = false,
   fields = [],
   lerna: lernaJsonPath = ''
 } = {}) {
