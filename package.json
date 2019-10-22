@@ -1,13 +1,14 @@
 {
-  "name": "packagename",
+  "name": "sync-monorepo-packages",
   "version": "0.0.0",
-  "private": true,
   "description": "Shankle short loin porchetta strip steak tongue drumstick shoulder shank turkey pork loin picanha flank.",
   "main": "src/index.js",
   "scripts": {
-    "posttest": "markdownlint --ignore node_modules . && eslint .",
-    "test": "nyc mocha \"test/**/*.spec.js\"",
+    "test": "markdownlint --ignore node_modules . && eslint .",
     "release": "standard-version"
+  },
+  "bin": {
+    "sync-monorepo-packages": "src/cli.js"
   },
   "repository": {
     "type": "git",
@@ -17,9 +18,24 @@
   "author": "Christopher Hiller <boneskull@boneskull.com> (https://boneskull.com/)",
   "license": "Apache-2.0",
   "engines": {
-    "node": ">=8"
+    "node": ">=10"
   },
-  "dependencies": {},
+  "dependencies": {
+    "common-tags": "^1.8.0",
+    "debug": "^4.1.1",
+    "deep-equal": "^1.1.0",
+    "find-up": "^4.1.0",
+    "globby": "^10.0.1",
+    "load-json-file": "^6.2.0",
+    "log-symbols": "^3.0.0",
+    "pluralize": "^8.0.0",
+    "read-pkg": "^5.2.0",
+    "rxjs": "^6.5.3",
+    "term-size": "^2.1.0",
+    "wrap-ansi": "^6.0.0",
+    "write-pkg": "^4.0.0",
+    "yargs": "^14.2.0"
+  },
   "devDependencies": {
     "babel-eslint": "^10.0.3",
     "eslint": "^6.5.1",
@@ -39,6 +55,7 @@
     "prettier": "^1.18.2",
     "sinon": "^7.5.0",
     "standard-version": "^7.0.0",
+    "type-fest": "^0.8.1",
     "unexpected": "^11.8.0",
     "unexpected-sinon": "^10.11.2"
   },
