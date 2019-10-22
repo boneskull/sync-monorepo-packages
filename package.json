@@ -26,6 +26,9 @@
     "workflow",
     "manifest"
   ],
+  "files": [
+    "src"
+  ],
   "author": "Christopher Hiller <boneskull@boneskull.com> (https://boneskull.com/)",
   "license": "Apache-2.0",
   "engines": {
