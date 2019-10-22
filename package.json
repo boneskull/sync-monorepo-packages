@@ -1,7 +1,7 @@
 {
   "name": "sync-monorepo-packages",
   "version": "0.0.0",
-  "description": "Shankle short loin porchetta strip steak tongue drumstick shoulder shank turkey pork loin picanha flank.",
+  "description": "Synchronizes one or more fields between package.json files in a monorepo",
   "main": "src/index.js",
   "scripts": {
     "test": "markdownlint --ignore node_modules . && eslint .",
@@ -12,9 +12,20 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/boneskull/packagename"
+    "url": "https://github.com/boneskull/sync-monorepo-packages"
   },
-  "keywords": [],
+  "keywords": [
+    "lerna",
+    "monorepo",
+    "package",
+    "package.json",
+    "sync",
+    "synchronize",
+    "copy",
+    "metadata",
+    "workflow",
+    "manifest"
+  ],
   "author": "Christopher Hiller <boneskull@boneskull.com> (https://boneskull.com/)",
   "license": "Apache-2.0",
   "engines": {
