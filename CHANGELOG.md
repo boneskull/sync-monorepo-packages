@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.1.0](https://github.com/boneskull/sync-monorepo-packages/compare/v0.0.3...v0.1.0) (2019-10-23)
+
+
+### Features
+
+* add publishConfig to defaults; fix application problems ([41b664f](https://github.com/boneskull/sync-monorepo-packages/commit/41b664f554a61b79f645e203772b9b1d765b601a))
+
+
+### Bug Fixes
+
+* turn off dry-run on everything ([3e7af3a](https://github.com/boneskull/sync-monorepo-packages/commit/3e7af3ac2bd4716c287108d8aaa44d292bacb84f))
+
 ### [0.0.3](https://github.com/boneskull/sync-monorepo-packages/compare/v0.0.2...v0.0.3) (2019-10-22)
 
 
