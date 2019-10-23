@@ -12,19 +12,30 @@
 
 ## Install
 
+**Requires Node.js v10.0.0 or newer!**
+
 ```shell
 $ npm install sync-monorepo-packages --save-dev
 ```
 
+_or_
+
+```shell
+$ npx sync-monorepo-packages --help
+```
+
 ## Usage
+
+Here, I have pasted the output of `--help` because I am lazy:
 
 ```plain
 sync-monorepo-packages [options]
 
 Options:
-  --dry-run, -D              Do not sync; print what would have changed[boolean]
-  --field, -f, --fields      Fields to sync
-       [array] [default: ["keywords","author","repository","license","engines"]]
+  --dry-run, -D              Do not sync; print what would have changed (implies
+                             --verbose)                                [boolean]
+  --field, -f, --fields      Fields to sync from --source      [array] [default:
+         ["keywords","author","repository","license","engines","publishConfig"]]
   --package, -p, --packages  Dirs/globs containing destination packages
                                              [array] [default: (use lerna.json)]
   --source, -s               Path to source package.json
@@ -50,7 +61,9 @@ Found a bug? Report it at https://github.com/boneskull/sync-monorepo-packages
 
 ## Notes
 
+- If there are other fields which would make sense to copy as a default, please suggest!
 - Use at your own risk! `--dry-run` is your friend
+- There is an API that you can use.
 
 ## License
 

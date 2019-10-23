@@ -6,8 +6,9 @@ const {
   count,
   filter,
   groupBy,
+  toArray,
   map,
-  mapTo,
+  mergeMapTo,
   mergeAll,
   mergeMap,
   tap
@@ -22,12 +23,23 @@ const {inspect} = require('util');
 const writePkg = require('write-pkg');
 const debug = require('debug')('sync-monorepo-packages');
 
+const DEFAULT_FIELDS = [
+  'keywords',
+  'author',
+  'repository',
+  'license',
+  'engines',
+  'publishConfig'
+];
+
+class SyncMonorepoPackagesError extends Error {}
+
 /**
  * Finds package.json files within one or more directories specified by `globs`
  * @param {string[]} globs - One ore more dirs or globs to dirs
- * @param {{cwd?: string}} [opts] - Current working directory
+ * @param {Partial<FindPackageJsonsByGlobsOptions>} [opts]
  */
-function findPackageJSONsByGlobs(globs, {cwd = process.cwd()} = {}) {
+function findPackageJsonsByGlobs(globs, {cwd = process.cwd()} = {}) {
   return from(
     globby(globs, {
       cwd,
@@ -46,7 +58,7 @@ function findPackageJSONsByGlobs(globs, {cwd = process.cwd()} = {}) {
 
 /**
  * Finds package.json files within packages as defined in a `lerna.json` file
- * @param {{cwd?: string, lernaJsonPath?: string, sourcePkgPath?: string}} [opts] - Current working directory and path to lerna.json
+ * @param {Partial<FindPackageJsonsFromLernaConfigOptions>} [opts] - Current working directory and path to lerna.json
  */
 function findPackageJSONsFromLernaConfig({
   cwd = process.cwd(),
@@ -59,7 +71,7 @@ function findPackageJSONsFromLernaConfig({
     from(findUp('lerna.json', {cwd})).pipe(
       tap(lernaConfigPath => {
         if (!lernaConfigPath) {
-          throw new Error(
+          throw new SyncMonorepoPackagesError(
             oneLine`Could not find lerna.json, and no package locations
             provided. Use "lerna" option to provide path to
             lerna.json, or "packages" option to provide one or more paths.`
@@ -75,7 +87,7 @@ function findPackageJSONsFromLernaConfig({
           /**
            * @param {LernaJSON} arg
            */
-          ({packages}) => findPackageJSONsByGlobs(packages, {cwd: lernaRoot})
+          ({packages}) => findPackageJsonsByGlobs(packages, {cwd: lernaRoot})
         )
       );
     }),
@@ -84,7 +96,8 @@ function findPackageJSONsFromLernaConfig({
 }
 
 /**
- * @param {{packageDirs?: string[], cwd?: string, lernaJsonPath?: string, sourcePkgPath?: string}} opts
+ * Returns an Observable of paths to `package.json` files
+ * @param {Partial<FindPackageJsonsOptions>} opts
  */
 function findPackageJsons({
   packageDirs = [],
@@ -94,7 +107,7 @@ function findPackageJsons({
 } = {}) {
   return iif(
     () => Boolean(packageDirs.length),
-    findPackageJSONsByGlobs(packageDirs, {cwd}),
+    findPackageJsonsByGlobs(packageDirs, {cwd}),
     findPackageJSONsFromLernaConfig({cwd, lernaJsonPath, sourcePkgPath})
   );
 }
@@ -104,28 +117,29 @@ function findPackageJsons({
  * @returns {OperatorFunction<string,PackageInfo>}
  */
 function readPackageJson() {
-  return observable =>
-    observable.pipe(
-      mergeMap(pkgJsonPath => {
-        return from(readPkg({cwd: path.dirname(pkgJsonPath)})).pipe(
+  return pkgJsonPath$ =>
+    pkgJsonPath$.pipe(
+      mergeMap(pkgJsonPath =>
+        from(readPkg({cwd: path.dirname(pkgJsonPath), normalize: false})).pipe(
           map(pkg => ({
             pkgPath: pkgJsonPath,
             pkg
           }))
-        );
-      })
+        )
+      )
     );
 }
 
 /**
- *
+ * Finds any fields in a source Observable of {@link PackageJson} objects
+ * not matching the corresponding field in the `sourcePkg$` Observable.
  * @param {Observable<PackageJson>} sourcePkg$
  * @param {string[]} fields
  * @returns {OperatorFunction<PackageInfo,PackageChange>}
  */
 function findChanges(sourcePkg$, fields) {
-  return observable =>
-    combineLatest(observable, sourcePkg$).pipe(
+  return packageJson$ =>
+    combineLatest(packageJson$, sourcePkg$).pipe(
       mergeMap(([{pkg, pkgPath}, sourcePkg]) =>
         from(fields).pipe(
           filter(field => !deepEqual(pkg[field], sourcePkg[field])),
@@ -143,20 +157,42 @@ function findChanges(sourcePkg$, fields) {
 
 /**
  * Applies changes to a package.json
+ * @todo this is "not idiomatic"; somebody fix this
  * @returns {MonoTypeOperatorFunction<PackageChange>}
  */
 function applyChanges() {
   return observable =>
     observable.pipe(
-      mergeMap(change =>
-        from(
-          writePkg(
-            change.pkgPath,
-            {...change.pkg, [change.field]: change.to},
-            {normalize: false}
+      toArray(),
+      mergeMap(changes => {
+        // this groups everything by pkgpath, so we can perform
+        // a single write per package.json below
+        const groupedChanges = changes.reduce(
+          (perPkg, change) => ({
+            ...perPkg,
+            [change.pkgPath]: [...(perPkg[change.pkgPath] || []), change]
+          }),
+          {}
+        );
+        return from(
+          Promise.all(
+            Object.keys(groupedChanges).map(pkgPath => {
+              const newPkg = groupedChanges[pkgPath].reduce(
+                /**
+                 * @param {PackageJson} newJson
+                 * @param {PackageChange} change
+                 */
+                (newJson, change) => {
+                  debug('%s: %O => %O', change.pkgPath, change.from, change.to);
+                  return {...change.pkg, newJson, [change.field]: change.to};
+                },
+                {}
+              );
+              return writePkg(pkgPath, newPkg, {normalize: false});
+            })
           )
-        ).pipe(mapTo(change))
-      )
+        ).pipe(mergeMapTo(changes));
+      })
     );
 }
 
@@ -238,7 +274,8 @@ function syncPackageJsons({
 
   const sourcePkg$ = from(
     readPkg({
-      cwd: normalizePkgPath(sourcePkgPath)
+      cwd: normalizePkgPath(sourcePkgPath),
+      normalize: false
     })
   );
 
@@ -262,6 +299,8 @@ exports.findPackageJsons = findPackageJsons;
 exports.readPackageJson = readPackageJson;
 exports.printChanges = serializeChanges;
 exports.summarizeChanges = summarizeChanges;
+exports.SyncMonorepoPackagesError = SyncMonorepoPackagesError;
+exports.DEFAULT_FIELDS = DEFAULT_FIELDS;
 
 /**
  * @typedef {Object} LernaJSON
@@ -281,6 +320,27 @@ exports.summarizeChanges = summarizeChanges;
  * @property {boolean} dryRun - If `true`, print changes and exit
  * @property {string[]} fields - Fields to copy
  * @property {string} lerna - Path to lerna.json
+ */
+
+/**
+ * @typedef {Object} FindPackageJsonsOptions
+ * @property {string[]} packageDirs
+ * @property {string} cwd
+ * @property {string} lernaJsonPath
+ * @property {string} sourcePkgPath
+ */
+
+/**
+ * @typedef {Object} FindPackageJsonsFromLernaConfigOptions
+ * @property {string[]} packageDirs
+ * @property {string} cwd
+ * @property {string} lernaJsonPath
+ * @property {string} sourcePkgPath
+ */
+
+/**
+ * @typedef {Object} FindPackageJsonsByGlobsOptions
+ * @property {string} cwd
  */
 
 /**

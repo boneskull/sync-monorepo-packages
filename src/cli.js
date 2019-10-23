@@ -8,11 +8,13 @@ const {share, map} = require('rxjs/operators');
 const {
   syncPackageJsons,
   serializeChanges,
-  summarizeChanges
-} = require('./index');
+  summarizeChanges,
+  SyncMonorepoPackagesError,
+  DEFAULT_FIELDS
+} = require('./index.js');
 const yargs = require('yargs');
 
-function warnAboutDryRunObnoxiously() {
+function obnoxiousDryRunWarning() {
   writeOut(
     `${warning}${warning}${warning} DRY RUN ${warning}${warning}${warning}`
   );
@@ -40,7 +42,13 @@ function writeOut(value) {
  * @param {boolean} verbose - If true, just print the whole thing
  */
 function writeError(err, verbose = false) {
-  console.error(verbose ? err : wrapLine(`${error} ${err.message}`));
+  console.error(
+    err instanceof SyncMonorepoPackagesError
+      ? verbose
+        ? err
+        : wrapLine(`${error} ${err.message}`)
+      : err
+  );
 }
 
 function main() {
@@ -57,13 +65,14 @@ function main() {
     )
     .options({
       'dry-run': {
-        description: 'Do not sync; print what would have changed',
+        description:
+          'Do not sync; print what would have changed (implies --verbose)',
         type: 'boolean',
         alias: 'D'
       },
       field: {
-        default: ['keywords', 'author', 'repository', 'license', 'engines'],
-        description: 'Fields to sync',
+        default: DEFAULT_FIELDS,
+        description: 'Fields to sync from --source',
         nargs: 1,
         type: 'array',
         alias: ['f', 'fields']
@@ -113,7 +122,7 @@ function main() {
   const changes$ = syncPackageJsons(argv).pipe(share());
 
   if (argv['dry-run']) {
-    warnAboutDryRunObnoxiously();
+    obnoxiousDryRunWarning();
   }
 
   if (argv['dry-run'] || argv.verbose) {
@@ -135,7 +144,7 @@ function main() {
     complete() {
       writeOut(`${success} Done!`);
       if (argv['dry-run']) {
-        warnAboutDryRunObnoxiously();
+        obnoxiousDryRunWarning();
       }
     },
     error: err => {
