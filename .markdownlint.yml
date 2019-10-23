@@ -5,3 +5,4 @@ ul-indent:
 commands-show-output: false
 no-bare-urls: false
 line-length: false
+no-emphasis-as-header: false
