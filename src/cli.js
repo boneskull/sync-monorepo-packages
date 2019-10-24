@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-
+const {EMPTY, iif, concat} = require('rxjs');
+const debug = require('debug')('sync-monorepo-packages:cli');
 const {info, warning, success, error} = require('log-symbols');
 const wrapAnsi = require('wrap-ansi');
 const {columns} = require('term-size')();
@@ -7,8 +8,10 @@ const {share, map} = require('rxjs/operators');
 
 const {
   syncPackageJsons,
-  serializeChanges,
-  summarizeChanges,
+  syncFile,
+  serializeCopyInfo,
+  serializePackageChange,
+  summarizePackageChanges,
   SyncMonorepoPackagesError,
   DEFAULT_FIELDS
 } = require('./index.js');
@@ -54,14 +57,34 @@ function writeError(err, verbose = false) {
 function main() {
   const argv = yargs
     .scriptName('sync-monorepo-packages')
-    .usage('$0 [options]')
-    .example(
-      '$0 --field keywords --field author -s ../package.json',
-      'Sync "keywords" and "author" from ../package.json to packages found in lerna.json'
-    )
-    .example(
-      '$0 --package ./foo --dry-run --no-summary',
-      'Using default fields, show what would have synced from package.json in current dir to packages in ./foo; hide summary'
+    .usage(
+      '$0 [file..]',
+      // @ts-ignore
+      'Synchronize files and metadata across packages in a monorepo',
+      yargs => {
+        yargs
+          .positional('file', {
+            description: 'One or more source files to sync',
+            normalize: true,
+            type: 'string',
+            coerce: v => (Array.isArray(v) ? v : [v])
+          })
+          .example(
+            '$0 --field keywords --field author -s ./foo/package.json',
+            'Sync "keywords" and "author" from ./foo/package.json to packages found in lerna.json'
+          )
+          .example(
+            '$0 --packages ./foo --dry-run --no-summary',
+            'Using default fields, show what would have synced from package.json in current dir to packages in ./foo; hide summary'
+          )
+          .example(
+            '$0 --no-package-json ./README.md',
+            'Sync ./README.md to each package found in lerna.json. Do not sync anything in package.json'
+          )
+          .epilog(
+            'Found a bug? Report it at https://github.com/boneskull/sync-monorepo-packages'
+          );
+      }
     )
     .options({
       'dry-run': {
@@ -72,22 +95,31 @@ function main() {
       },
       field: {
         default: DEFAULT_FIELDS,
-        description: 'Fields to sync from --source',
+        description: 'Fields in source package.json to sync',
         nargs: 1,
         type: 'array',
         alias: ['f', 'fields']
       },
-      package: {
+      force: {
+        description: `Overwrite destination file(s)`,
+        type: 'boolean'
+      },
+      packages: {
         defaultDescription: '(use lerna.json)',
         description: 'Dirs/globs containing destination packages',
         nargs: 1,
         normalizePath: true,
         type: 'array',
-        alias: ['p', 'packages']
+        alias: ['p']
+      },
+      'package-json': {
+        description: 'Sync package.json',
+        type: 'boolean',
+        default: true
       },
       source: {
         alias: 's',
-        defaultDescription: '(package.json in current dir)',
+        defaultDescription: '(closest package.json)',
         description: 'Path to source package.json',
         nargs: 1,
         normalizePath: true,
@@ -112,14 +144,17 @@ function main() {
         alias: 'l'
       }
     })
-    .epilog(
-      'Found a bug? Report it at https://github.com/boneskull/sync-monorepo-packages'
-    )
     .help()
     .version()
     .parse();
 
-  const changes$ = syncPackageJsons(argv).pipe(share());
+  debug('argv: %O', argv);
+
+  const changes$ = iif(
+    () => argv['package-json'],
+    syncPackageJsons(argv).pipe(share()),
+    EMPTY
+  );
 
   if (argv['dry-run']) {
     obnoxiousDryRunWarning();
@@ -127,20 +162,34 @@ function main() {
 
   if (argv['dry-run'] || argv.verbose) {
     changes$
-      .pipe(serializeChanges())
+      .pipe(serializePackageChange())
       .subscribe({next: writeOut, error: () => {}});
   }
 
   if (argv.summary) {
     changes$
       .pipe(
-        summarizeChanges(),
+        summarizePackageChanges(),
         map(summary => `${info} ${summary}`)
       )
       .subscribe({next: writeOut, error: () => {}});
   }
 
-  changes$.subscribe({
+  /**
+   * @type {import('rxjs').Observable<import('./index.js').CopyInfo>}
+   */
+  const files$ = iif(
+    () => argv.file.length,
+    syncFile(argv.file, argv).pipe(share()),
+    EMPTY
+  );
+  if (argv['dry-run'] || argv.verbose) {
+    files$
+      .pipe(serializeCopyInfo())
+      .subscribe({next: writeOut, error: () => {}});
+  }
+
+  concat(changes$, files$).subscribe({
     complete() {
       writeOut(`${success} Done!`);
       if (argv['dry-run']) {

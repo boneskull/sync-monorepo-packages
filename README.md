@@ -29,32 +29,42 @@ $ npx sync-monorepo-packages --help
 Here, I have pasted the output of `--help` because I am lazy:
 
 ```plain
-sync-monorepo-packages [options]
+sync-monorepo-packages [file..]
+
+Synchronize files and metadata across packages in a monorepo
+
+Positionals:
+  file  One or more source files to sync                                [string]
 
 Options:
-  --dry-run, -D              Do not sync; print what would have changed (implies
-                             --verbose)                                [boolean]
-  --field, -f, --fields      Fields to sync from --source      [array] [default:
+  --dry-run, -D      Do not sync; print what would have changed (implies
+                     --verbose)                                        [boolean]
+  --field, --fields  Fields in source package.json to sync     [array] [default:
          ["keywords","author","repository","license","engines","publishConfig"]]
-  --package, -p, --packages  Dirs/globs containing destination packages
+  --force            Overwrite destination file(s)                     [boolean]
+  --packages, -p     Dirs/globs containing destination packages
                                              [array] [default: (use lerna.json)]
-  --source, -s               Path to source package.json
-                               [string] [default: (package.json in current dir)]
-  --verbose, -v              Print change details                      [boolean]
-  --summary                  Print summary             [boolean] [default: true]
-  --lerna, -l                Path to lerna.json
+  --package-json     Sync package.json                 [boolean] [default: true]
+  --source, -s       Path to source package.json
+                                      [string] [default: (closest package.json)]
+  --verbose, -v      Print change details                              [boolean]
+  --summary          Print summary                     [boolean] [default: true]
+  --lerna, -l        Path to lerna.json
                                  [string] [default: (lerna.json in current dir)]
-  --help                     Show help                                 [boolean]
-  --version                  Show version number                       [boolean]
+  --help             Show help                                         [boolean]
+  --version          Show version number                               [boolean]
 
 Examples:
   sync-monorepo-packages --field keywords   Sync "keywords" and "author" from
-  --field author -s ../package.json         ../package.json to packages found in
-                                            lerna.json
-  sync-monorepo-packages --package ./foo    Using default fields, show what
+  --field author -s ./foo/package.json      ./foo/package.json to packages found
+                                            in lerna.json
+  sync-monorepo-packages --packages ./foo   Using default fields, show what
   --dry-run --no-summary                    would have synced from package.json
                                             in current dir to packages in ./foo;
                                             hide summary
+  sync-monorepo-packages --no-package-json  Sync ./README.md to each package
+  ./README.md                               found in lerna.json. Do not sync
+                                            anything in package.json
 
 Found a bug? Report it at https://github.com/boneskull/sync-monorepo-packages
 ```
@@ -63,7 +73,8 @@ Found a bug? Report it at https://github.com/boneskull/sync-monorepo-packages
 
 - If there are other fields which would make sense to copy as a default, please suggest!
 - Use at your own risk! `--dry-run` is your friend
-- There is an API that you can use.
+- When copying files, directories may be created relative to the dirpath of `lerna.json`. For example, if you want to sync `foo/bar.md` to each package, `packages/*/foo/bar.md` will be the result. This may not work properly with explicitly-specified package directories! Use from project root to be sure.
+- There is an API that you can use. Go for it!
 
 ## License
 

@@ -1,14 +1,18 @@
 const logSymbols = require('log-symbols');
 const pluralize = require('pluralize');
 const {oneLine} = require('common-tags');
-const {combineLatest, from, iif, of} = require('rxjs');
+const {defer, EMPTY, combineLatest, from, iif, of} = require('rxjs');
+
+const cp = require('cp-file');
 const {
   count,
+  throwIfEmpty,
   filter,
   groupBy,
   toArray,
   map,
   mergeMapTo,
+  mapTo,
   mergeAll,
   mergeMap,
   tap
@@ -35,62 +39,105 @@ const DEFAULT_FIELDS = [
 class SyncMonorepoPackagesError extends Error {}
 
 /**
- * Finds package.json files within one or more directories specified by `globs`
+ * Finds one or more directories specified by `globs`
  * @param {string[]} globs - One ore more dirs or globs to dirs
- * @param {Partial<FindPackageJsonsByGlobsOptions>} [opts]
+ * @param {Partial<FindByGlobsOptions>} [opts]
  */
-function findPackageJsonsByGlobs(globs, {cwd = process.cwd()} = {}) {
+function findDirectoriesByGlobs(globs, {cwd = process.cwd()} = {}) {
   return from(
     globby(globs, {
       cwd,
       onlyDirectories: true,
       expandDirectories: false
     })
-  ).pipe(
-    mergeAll(),
+  ).pipe(mergeAll());
+}
+
+/**
+ * Finds package.json files within one or more directories specified by `globs`
+ * @param {string[]} globs - One ore more dirs or globs to dirs
+ * @param {Partial<FindByGlobsOptions>} [opts]
+ */
+function findPackageJsonsByGlobs(globs, {cwd = process.cwd()} = {}) {
+  return findDirectoriesByGlobs(globs, {cwd}).pipe(
     mergeMap(dir => from(globby(path.join(dir, 'package.json')))),
     mergeAll(),
     tap(pkgPath => {
-      debug(`found ${pkgPath}`);
+      debug(`found package.json at ${pkgPath}`);
     })
   );
 }
 
 /**
- * Finds package.json files within packages as defined in a `lerna.json` file
- * @param {Partial<FindPackageJsonsFromLernaConfigOptions>} [opts] - Current working directory and path to lerna.json
+ *
+ * @param {Partial<FindLernaConfigOptions>} [opts]
  */
-function findPackageJSONsFromLernaConfig({
+function findLernaConfig({cwd = process.cwd(), lernaJsonPath = ''} = {}) {
+  return iif(
+    () => findLernaConfig.cache.has(`${cwd}:${lernaJsonPath}`),
+    defer(() =>
+      of(findLernaConfig.cache.get(`${cwd}:${lernaJsonPath}`)).pipe(
+        tap(lernaInfo => {
+          debug('retrieved cached LernaInfo %O', lernaInfo);
+        })
+      )
+    ),
+    iif(
+      () => Boolean(lernaJsonPath),
+      of(lernaJsonPath),
+      from(findUp('lerna.json', {cwd})).pipe(
+        tap(lernaConfigPath => {
+          if (!lernaConfigPath) {
+            throw new SyncMonorepoPackagesError(
+              oneLine`Could not find lerna.json, and no package locations
+            provided. Use "lerna" option to provide path to
+            lerna.json, or "packages" option to provide one or more paths.`
+            );
+          }
+        })
+      )
+    ).pipe(
+      mergeMap(lernaConfigPath => {
+        const lernaRoot = path.dirname(lernaConfigPath);
+        debug(`found lerna root %s`, lernaRoot);
+        return from(loadJsonFile(lernaConfigPath)).pipe(
+          map(
+            /**
+             * @param {LernaJson} lernaConfig
+             */ lernaConfig =>
+              /**
+               * @type {LernaInfo}
+               */
+              ({lernaConfig, lernaRoot})
+          ),
+          tap(lernaInfo => {
+            debug(
+              'caching LernaInfo w/ key "%s": %O',
+              `${cwd}:${lernaJsonPath}`,
+              lernaInfo
+            );
+            findLernaConfig.cache.set(`${cwd}:${lernaJsonPath}`, lernaInfo);
+          })
+        );
+      })
+    )
+  );
+}
+findLernaConfig.cache = new Map();
+
+/**
+ * Finds package.json files within packages as defined in a `lerna.json` file
+ * @param {Partial<FindPackageJsonsFromLernaConfig>} [opts] - Current working directory and path to lerna.json
+ */
+function findPackageJsonsFromLernaConfig({
   cwd = process.cwd(),
   lernaJsonPath = '',
   sourcePkgPath = ''
 } = {}) {
-  return iif(
-    () => Boolean(lernaJsonPath),
-    of(lernaJsonPath),
-    from(findUp('lerna.json', {cwd})).pipe(
-      tap(lernaConfigPath => {
-        if (!lernaConfigPath) {
-          throw new SyncMonorepoPackagesError(
-            oneLine`Could not find lerna.json, and no package locations
-            provided. Use "lerna" option to provide path to
-            lerna.json, or "packages" option to provide one or more paths.`
-          );
-        }
-      })
-    )
-  ).pipe(
-    mergeMap(lernaConfigPath => {
-      const lernaRoot = path.dirname(lernaConfigPath);
-      return from(loadJsonFile(lernaConfigPath)).pipe(
-        mergeMap(
-          /**
-           * @param {LernaJSON} arg
-           */
-          ({packages}) => findPackageJsonsByGlobs(packages, {cwd: lernaRoot})
-        )
-      );
-    }),
+  return findLernaConfig({lernaJsonPath, cwd}).pipe(
+    mergeMap(({lernaRoot, lernaConfig}) =>
+      findPackageJsonsByGlobs(lernaConfig.packages, {cwd: lernaRoot})
+    ),
     filter(pkgPath => pkgPath !== sourcePkgPath)
   );
 }
@@ -100,7 +147,7 @@ function findPackageJSONsFromLernaConfig({
  * @param {Partial<FindPackageJsonsOptions>} opts
  */
 function findPackageJsons({
-  packageDirs = [],
+  packages: packageDirs = [],
   cwd = process.cwd(),
   lernaJsonPath = '',
   sourcePkgPath = ''
@@ -108,7 +155,7 @@ function findPackageJsons({
   return iif(
     () => Boolean(packageDirs.length),
     findPackageJsonsByGlobs(packageDirs, {cwd}),
-    findPackageJSONsFromLernaConfig({cwd, lernaJsonPath, sourcePkgPath})
+    findPackageJsonsFromLernaConfig({cwd, lernaJsonPath, sourcePkgPath})
   );
 }
 
@@ -213,15 +260,13 @@ function inspectChangeValue(value) {
 /**
  * @returns {OperatorFunction<PackageChange,string>}
  */
-function serializeChanges() {
+function serializePackageChange() {
   return observable =>
     observable.pipe(
       map(change => {
         const from = inspectChangeValue(change.from);
         const to = inspectChangeValue(change.to);
-        return `${logSymbols.info} ${change.pkgPath}: Synchronized field "${change.field}":
-  ${from} => ${to}
-`;
+        return `${logSymbols.info} ${change.pkgPath}: Synchronized field "${change.field}" ${from} => ${to}`;
       })
     );
 }
@@ -230,7 +275,7 @@ function serializeChanges() {
  * Inputs changes and outputs summaries of what happened
  * @returns {OperatorFunction<PackageChange,string>}
  */
-function summarizeChanges() {
+function summarizePackageChanges() {
   return observable =>
     observable.pipe(
       groupBy(change => change.pkgPath),
@@ -262,21 +307,29 @@ function normalizePkgPath(pkgPath) {
  * @param {Partial<SyncPackageJsonsOptions>} [opts]
  */
 function syncPackageJsons({
-  sourcePkgPath = path.join(process.cwd(), 'package.json'),
-  packageDirs = [],
+  sourcePkgPath = '',
+  packages: packageDirs = [],
   dryRun = false,
   fields = [],
   lerna: lernaJsonPath = ''
 } = {}) {
-  if (path.basename(sourcePkgPath) !== 'package.json') {
+  if (sourcePkgPath && path.basename(sourcePkgPath) !== 'package.json') {
     sourcePkgPath = path.join(sourcePkgPath, 'package.json');
   }
 
-  const sourcePkg$ = from(
-    readPkg({
-      cwd: normalizePkgPath(sourcePkgPath),
-      normalize: false
-    })
+  const sourcePkg$ = iif(
+    () => Boolean(sourcePkgPath),
+    of(sourcePkgPath),
+    from(findUp('package.json'))
+  ).pipe(
+    mergeMap(sourcePkgPath =>
+      from(
+        readPkg({
+          cwd: normalizePkgPath(sourcePkgPath),
+          normalize: false
+        })
+      )
+    )
   );
 
   // get changes
@@ -293,17 +346,110 @@ function syncPackageJsons({
   return iif(() => dryRun, changes$, changes$.pipe(applyChanges()));
 }
 
-exports.serializeChanges = serializeChanges;
+/**
+ *
+ * @param {string[]} [files] - Source file(s)
+ * @param {Partial<SyncFileOptions>} [opts]
+ */
+function syncFile(
+  files = [],
+  {
+    packageDirs = [],
+    dryRun = false,
+    lerna: lernaJsonPath = '',
+    force = false,
+    cwd = process.cwd()
+  } = {}
+) {
+  if (!files.length) {
+    return EMPTY;
+  }
+  const files$ = from(files).pipe(
+    mergeMap(file =>
+      from(globby(file)).pipe(
+        mergeAll(),
+        throwIfEmpty(
+          () =>
+            new SyncMonorepoPackagesError(
+              `Could not find source file "${file}"`
+            )
+        )
+      )
+    )
+  );
+  debug('syncFile called with force: %s', force);
+  const packageDirs$ = iif(
+    () => Boolean(packageDirs.length),
+    from(packageDirs).pipe(
+      toArray(),
+      map(packageDirs => ({cwd, packageDirs}))
+    ),
+    findLernaConfig({lernaJsonPath}).pipe(
+      mergeMap(({lernaConfig, lernaRoot: cwd}) =>
+        findDirectoriesByGlobs(lernaConfig.packages, {cwd}).pipe(
+          toArray(),
+          map(packageDirs => ({cwd, packageDirs}))
+        )
+      )
+    )
+  );
+  return combineLatest(files$, packageDirs$).pipe(
+    mergeMap(([srcFilePath, {packageDirs, cwd}]) =>
+      // - we might not be at the package root
+      // - we don't know where the packages are relative to us
+      // - we don't know where we are relative to srcFilePath
+      // - to that end, we need to compute the destination relative to
+      //   `cwd` (the variable) and also relative to our actual cwd.
+      // - display relative paths to the user for brevity
+      //   (we can change this later)
+      packageDirs.map(packageDir => ({
+        from: srcFilePath,
+        to: path.relative(
+          process.cwd(),
+          path.join(
+            path.resolve(cwd, packageDir),
+            path.relative(path.resolve(process.cwd(), cwd), srcFilePath)
+          )
+        )
+      }))
+    ),
+    mergeMap(copyInfo => {
+      debug('Copying %s to %s', copyInfo.from, copyInfo.to);
+      return iif(
+        () => dryRun,
+        of(copyInfo),
+        from(cp(copyInfo.from, copyInfo.to, {overwrite: force})).pipe(
+          mapTo(copyInfo)
+        )
+      );
+    })
+  );
+}
+
+/**
+ * @returns {OperatorFunction<CopyInfo,string>}
+ */
+function serializeCopyInfo() {
+  return copyInfo$ =>
+    copyInfo$.pipe(
+      map(
+        ({from, to}) => `${logSymbols.info} Synchronized file ${from} to ${to}`
+      )
+    );
+}
+
+exports.serializePackageChange = serializePackageChange;
 exports.syncPackageJsons = syncPackageJsons;
 exports.findPackageJsons = findPackageJsons;
 exports.readPackageJson = readPackageJson;
-exports.printChanges = serializeChanges;
-exports.summarizeChanges = summarizeChanges;
+exports.summarizePackageChanges = summarizePackageChanges;
+exports.syncFile = syncFile;
+exports.serializeCopyInfo = serializeCopyInfo;
 exports.SyncMonorepoPackagesError = SyncMonorepoPackagesError;
 exports.DEFAULT_FIELDS = DEFAULT_FIELDS;
 
 /**
- * @typedef {Object} LernaJSON
+ * @typedef {Object} LernaJson
  * @property {string[]} packages - Where Lerna finds packages
  */
 
@@ -313,6 +459,20 @@ exports.DEFAULT_FIELDS = DEFAULT_FIELDS;
  * @property {string} pkgPath - Path to package
  */
 
+/**
+ * @typedef {Object} CopyInfo
+ * @property {string} from
+ * @property {string} to
+ */
+
+/**
+ * @typedef {Object} SyncFileOptions
+ * @property {string} cwd
+ * @property {string} lerna
+ * @property {boolean} dryRun
+ * @property {string[]} packageDirs
+ * @property {boolean} force
+ */
 /**
  * @typedef {Object} SyncPackageJsonsOptions
  * @property {string} sourcePkgPath - Path to source package.json
@@ -331,7 +491,7 @@ exports.DEFAULT_FIELDS = DEFAULT_FIELDS;
  */
 
 /**
- * @typedef {Object} FindPackageJsonsFromLernaConfigOptions
+ * @typedef {Object} FindPackageJsonsFromLernaConfig
  * @property {string[]} packageDirs
  * @property {string} cwd
  * @property {string} lernaJsonPath
@@ -339,7 +499,19 @@ exports.DEFAULT_FIELDS = DEFAULT_FIELDS;
  */
 
 /**
- * @typedef {Object} FindPackageJsonsByGlobsOptions
+ * @typedef {Object} LernaInfo
+ * @property {string} lernaRoot
+ * @property {LernaJson} lernaConfig
+ */
+
+/**
+ * @typedef {Object} FindLernaConfigOptions
+ * @property {string} cwd
+ * @property {string} lernaJsonPath
+ */
+
+/**
+ * @typedef {Object} FindByGlobsOptions
  * @property {string} cwd
  */
 
