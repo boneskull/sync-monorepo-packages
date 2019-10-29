@@ -1,6 +1,6 @@
 # sync-monorepo-packages
 
-> Synchronizes one or more fields between package.json files in a monorepo
+> Synchronizes package.json fields and arbitrary files in a monorepo
 
 ## Features
 
@@ -9,6 +9,7 @@
 - Helpful defaults
 - Detailed "dry run" mode
 - Summary of operations
+- Sync arbitrary files (e.g. `README.md`)
 
 ## Install
 
