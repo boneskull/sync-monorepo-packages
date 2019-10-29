@@ -1,17 +1,20 @@
-const logSymbols = require('log-symbols');
 const pluralize = require('pluralize');
 const {oneLine} = require('common-tags');
-const {defer, EMPTY, combineLatest, from, iif, of} = require('rxjs');
-
+const {defer, concat, from, iif, of} = require('rxjs');
+const {promises: fs} = require('fs');
 const cp = require('cp-file');
 const {
-  count,
+  catchError,
+  defaultIfEmpty,
+  concatMap,
   throwIfEmpty,
   filter,
-  groupBy,
+  reduce,
+  concatAll,
+  concatMapTo,
   toArray,
+  share,
   map,
-  mergeMapTo,
   mapTo,
   mergeAll,
   mergeMap,
@@ -23,9 +26,11 @@ const loadJsonFile = require('load-json-file');
 const globby = require('globby');
 const deepEqual = require('deep-equal');
 const readPkg = require('read-pkg');
-const {inspect} = require('util');
 const writePkg = require('write-pkg');
 const debug = require('debug')('sync-monorepo-packages');
+const {createCopyInfo, createPackageChange} = require('./model');
+
+const PACKAGE_JSON = 'package.json';
 
 const DEFAULT_FIELDS = [
   'keywords',
@@ -60,28 +65,23 @@ function findDirectoriesByGlobs(globs, {cwd = process.cwd()} = {}) {
  */
 function findPackageJsonsByGlobs(globs, {cwd = process.cwd()} = {}) {
   return findDirectoriesByGlobs(globs, {cwd}).pipe(
-    mergeMap(dir => from(globby(path.join(dir, 'package.json')))),
+    mergeMap(dir => from(globby(path.join(dir, PACKAGE_JSON)))),
     mergeAll(),
     tap(pkgPath => {
-      debug(`found package.json at ${pkgPath}`);
+      debug('found %s at %s', PACKAGE_JSON, pkgPath);
     })
   );
 }
 
 /**
- *
+ * Finds a Lerna config file (lerna.json)
  * @param {Partial<FindLernaConfigOptions>} [opts]
+ * @returns {Observable<LernaInfo>}
  */
 function findLernaConfig({cwd = process.cwd(), lernaJsonPath = ''} = {}) {
   return iif(
     () => findLernaConfig.cache.has(`${cwd}:${lernaJsonPath}`),
-    defer(() =>
-      of(findLernaConfig.cache.get(`${cwd}:${lernaJsonPath}`)).pipe(
-        tap(lernaInfo => {
-          debug('retrieved cached LernaInfo %O', lernaInfo);
-        })
-      )
-    ),
+    defer(() => of(findLernaConfig.cache.get(`${cwd}:${lernaJsonPath}`))),
     iif(
       () => Boolean(lernaJsonPath),
       of(lernaJsonPath),
@@ -90,35 +90,34 @@ function findLernaConfig({cwd = process.cwd(), lernaJsonPath = ''} = {}) {
           if (!lernaConfigPath) {
             throw new SyncMonorepoPackagesError(
               oneLine`Could not find lerna.json, and no package locations
-            provided. Use "lerna" option to provide path to
-            lerna.json, or "packages" option to provide one or more paths.`
+              provided. Use option "--lerna" to provide path to lerna.json,
+              or "--packages" option to provide package path(s).`
             );
           }
+          debug(`found lerna config at %s`, lernaConfigPath);
         })
       )
     ).pipe(
-      mergeMap(lernaConfigPath => {
-        const lernaRoot = path.dirname(lernaConfigPath);
-        debug(`found lerna root %s`, lernaRoot);
-        return from(loadJsonFile(lernaConfigPath)).pipe(
+      mergeMap(lernaConfigPath =>
+        from(loadJsonFile(lernaConfigPath)).pipe(
           map(
             /**
              * @param {LernaJson} lernaConfig
-             */ lernaConfig =>
-              /**
-               * @type {LernaInfo}
-               */
-              ({lernaConfig, lernaRoot})
-          ),
-          tap(lernaInfo => {
-            debug(
-              'caching LernaInfo w/ key "%s": %O',
-              `${cwd}:${lernaJsonPath}`,
-              lernaInfo
-            );
-            findLernaConfig.cache.set(`${cwd}:${lernaJsonPath}`, lernaInfo);
-          })
+             */ lernaConfig => ({
+              lernaConfig,
+              lernaRoot: path.dirname(lernaConfigPath)
+            })
+          )
+        )
+      ),
+      tap(lernaInfo => {
+        debug(
+          'caching LernaInfo w/ key "%s:%s": %O',
+          cwd,
+          lernaJsonPath,
+          lernaInfo
         );
+        findLernaConfig.cache.set(`${cwd}:${lernaJsonPath}`, lernaInfo);
       })
     )
   );
@@ -161,17 +160,19 @@ function findPackageJsons({
 
 /**
  *
- * @returns {OperatorFunction<string,PackageInfo>}
+ * @returns {OperatorFunction<string,Readonly<PackageInfo>>}
  */
 function readPackageJson() {
   return pkgJsonPath$ =>
     pkgJsonPath$.pipe(
       mergeMap(pkgJsonPath =>
         from(readPkg({cwd: path.dirname(pkgJsonPath), normalize: false})).pipe(
-          map(pkg => ({
-            pkgPath: pkgJsonPath,
-            pkg
-          }))
+          map(pkg =>
+            Object.freeze({
+              pkgPath: pkgJsonPath,
+              pkg
+            })
+          )
         )
       )
     );
@@ -182,21 +183,27 @@ function readPackageJson() {
  * not matching the corresponding field in the `sourcePkg$` Observable.
  * @param {Observable<PackageJson>} sourcePkg$
  * @param {string[]} fields
- * @returns {OperatorFunction<PackageInfo,PackageChange>}
+ * @returns {OperatorFunction<PackageInfo,Readonly<PackageChange>>}
  */
 function findChanges(sourcePkg$, fields) {
-  return packageJson$ =>
-    combineLatest(packageJson$, sourcePkg$).pipe(
-      mergeMap(([{pkg, pkgPath}, sourcePkg]) =>
-        from(fields).pipe(
-          filter(field => !deepEqual(pkg[field], sourcePkg[field])),
-          map(field => ({
-            from: pkg[field],
-            to: sourcePkg[field],
-            field,
-            pkgPath,
-            pkg
-          }))
+  return packageInfo$ =>
+    packageInfo$.pipe(
+      mergeMap(({pkg, pkgPath}) =>
+        sourcePkg$.pipe(
+          mergeMap(sourcePkg =>
+            from(fields).pipe(
+              filter(field => !deepEqual(pkg[field], sourcePkg[field])),
+              map(field =>
+                createPackageChange(
+                  pkg[field],
+                  sourcePkg[field],
+                  pkgPath,
+                  field,
+                  pkg
+                )
+              )
+            )
+          )
         )
       )
     );
@@ -205,13 +212,13 @@ function findChanges(sourcePkg$, fields) {
 /**
  * Applies changes to a package.json
  * @todo this is "not idiomatic"; somebody fix this
- * @returns {MonoTypeOperatorFunction<PackageChange>}
+ * @returns {MonoTypeOperatorFunction<Readonly<PackageChange>>}
  */
-function applyChanges() {
+function applyChanges(dryRun = false) {
   return observable =>
     observable.pipe(
       toArray(),
-      mergeMap(changes => {
+      concatMap(changes => {
         // this groups everything by pkgpath, so we can perform
         // a single write per package.json below
         const groupedChanges = changes.reduce(
@@ -221,75 +228,123 @@ function applyChanges() {
           }),
           {}
         );
-        return from(
-          Promise.all(
-            Object.keys(groupedChanges).map(pkgPath => {
-              const newPkg = groupedChanges[pkgPath].reduce(
-                /**
-                 * @param {PackageJson} newJson
-                 * @param {PackageChange} change
-                 */
-                (newJson, change) => {
-                  debug('%s: %O => %O', change.pkgPath, change.from, change.to);
-                  return {...change.pkg, newJson, [change.field]: change.to};
-                },
-                {}
+        // note that even though we're grouping to reduce file
+        // writes, we need to have a 1:1 input/output of values.
+        // this is what we use `newChanges` for below.
+        return Object.keys(groupedChanges).map(pkgPath => {
+          const newChanges = [];
+          const pkgChange = groupedChanges[pkgPath].reduce(
+            /**
+             * @param {PackageChange} nextPkgChange
+             * @param {PackageChange} pkgChange
+             */
+            (nextPkgChange, pkgChange) => {
+              debug(
+                '%s: %O => %O',
+                pkgChange.pkgPath,
+                pkgChange.from,
+                pkgChange.to
               );
-              return writePkg(pkgPath, newPkg, {normalize: false});
-            })
-          )
-        ).pipe(mergeMapTo(changes));
-      })
-    );
-}
 
-/**
- *
- * @param {any?} value
- */
-function inspectChangeValue(value) {
-  return value === undefined
-    ? '(undefined)'
-    : inspect(value, {
-        colors: true,
-        compact: true,
-        breakLength: Infinity
-      });
-}
-
-/**
- * @returns {OperatorFunction<PackageChange,string>}
- */
-function serializePackageChange() {
-  return observable =>
-    observable.pipe(
-      map(change => {
-        const from = inspectChangeValue(change.from);
-        const to = inspectChangeValue(change.to);
-        return `${logSymbols.info} ${change.pkgPath}: Synchronized field "${change.field}" ${from} => ${to}`;
-      })
+              let draftPkgChange;
+              // if the "to" value--corresponding to the source field value--is
+              // undefined, we want to just remove the value from the
+              // destination
+              if (nextPkgChange.to === undefined) {
+                draftPkgChange = {...pkgChange.pkg, ...pkgChange.newPkg};
+                delete draftPkgChange[pkgChange.field];
+              } else {
+                draftPkgChange = {
+                  ...nextPkgChange.pkg,
+                  ...nextPkgChange.newPkg,
+                  [pkgChange.field]: pkgChange.to
+                };
+              }
+              const newPkgChange = pkgChange.withNewPackage(draftPkgChange);
+              newChanges.push(newPkgChange);
+              return newPkgChange;
+            }
+          );
+          return iif(
+            () => dryRun,
+            newChanges,
+            defer(() =>
+              from(writePkg(pkgPath, pkgChange.newPkg, {normalize: false}))
+            ).pipe(concatMapTo(newChanges))
+          );
+        });
+      }),
+      concatAll()
     );
 }
 
 /**
  * Inputs changes and outputs summaries of what happened
- * @returns {OperatorFunction<PackageChange,string>}
+ * @returns {OperatorFunction<Readonly<PackageChange>,string>}
  */
-function summarizePackageChanges() {
-  return observable =>
-    observable.pipe(
-      groupBy(change => change.pkgPath),
-      mergeMap(group$ =>
-        group$.pipe(
-          count(),
-          map(
-            count =>
-              `${group$.key}: Changed ${count} ${pluralize('field', count)}`
-          )
-        )
-      )
+exports.summarizePackageChanges = () => pkgChange$ =>
+  pkgChange$.pipe(
+    filter(pkgChange => Boolean(pkgChange.newPkg)),
+    reduce(
+      ({totalChanges, allPackages}, pkgChange) => ({
+        totalChanges: totalChanges + 1,
+        allPackages: allPackages.add(pkgChange.pkgPath)
+      }),
+      {totalChanges: 0, allPackages: new Set()}
+    ),
+    map(
+      ({totalChanges, allPackages}) =>
+        `Changed ${totalChanges} ${pluralize('field', totalChanges)} across ${
+          allPackages.size
+        } files`
+    )
+  );
+
+/**
+ * Provide a summary of the file copies made
+ * @returns {OperatorFunction<Readonly<CopyInfo>,string>}
+ */
+exports.summarizeFileCopies = () => copyInfo$ => {
+  const summary = () => copyInfo$ =>
+    copyInfo$.pipe(
+      reduce(
+        ({totalCopies, allSources}, {from}) => ({
+          totalCopies: totalCopies + 1,
+          allSources: allSources.add(from)
+        }),
+        {totalCopies: 0, allSources: new Set()}
+      ),
+      filter(({totalCopies}) => totalCopies > 0)
     );
-}
+
+  copyInfo$ = copyInfo$.pipe(share());
+  const success$ = copyInfo$.pipe(
+    filter(copyInfo => copyInfo.success),
+    summary(),
+    map(({totalCopies, allSources}) => ({
+      successMsg: `Copied ${allSources.size} ${pluralize(
+        'file',
+        allSources.size
+      )} to ${totalCopies} ${pluralize('package', totalCopies)}`
+    }))
+  );
+
+  const fail$ = copyInfo$.pipe(
+    filter(copyInfo => Boolean(copyInfo.err)),
+    summary(),
+    map(({totalCopies, allSources}) => ({
+      failMsg: `Failed to copy ${allSources.size} ${pluralize(
+        'file',
+        allSources.size
+      )} to ${totalCopies} ${pluralize(
+        'package',
+        totalCopies
+      )}; use --verbose for details`
+    }))
+  );
+
+  return concat(success$, fail$).pipe(defaultIfEmpty('No files copied.'));
+};
 
 /**
  * Strip 'package.json' from a path to get the dirname; to be handed
@@ -306,13 +361,13 @@ function normalizePkgPath(pkgPath) {
  * Given a source package.json and a list of package directories, sync fields from source to destination(s)
  * @param {Partial<SyncPackageJsonsOptions>} [opts]
  */
-function syncPackageJsons({
+exports.syncPackageJsons = ({
   sourcePkgPath = '',
   packages: packageDirs = [],
   dryRun = false,
   fields = [],
   lerna: lernaJsonPath = ''
-} = {}) {
+} = {}) => {
   if (sourcePkgPath && path.basename(sourcePkgPath) !== 'package.json') {
     sourcePkgPath = path.join(sourcePkgPath, 'package.json');
   }
@@ -320,7 +375,11 @@ function syncPackageJsons({
   const sourcePkg$ = iif(
     () => Boolean(sourcePkgPath),
     of(sourcePkgPath),
-    from(findUp('package.json'))
+    from(findUp('package.json')).pipe(
+      tap(pkgJsonPath => {
+        debug('found source package.json at %s', pkgJsonPath);
+      })
+    )
   ).pipe(
     mergeMap(sourcePkgPath =>
       from(
@@ -329,7 +388,8 @@ function syncPackageJsons({
           normalize: false
         })
       )
-    )
+    ),
+    share()
   );
 
   // get changes
@@ -343,15 +403,41 @@ function syncPackageJsons({
   );
 
   // decide if we should apply them
-  return iif(() => dryRun, changes$, changes$.pipe(applyChanges()));
+  return changes$.pipe(applyChanges(dryRun));
+};
+
+/**
+ * For dry-run mode, if a file were to be copied, but force is
+ * false, we should throw.
+ * @param {CopyInfo} copyInfo
+ * @param {boolean?} force
+ */
+function dryRunTestFile(copyInfo, force = false) {
+  return iif(
+    () => force,
+    of(copyInfo),
+    from(fs.stat(copyInfo.to)).pipe(
+      map(() => {
+        const err = new Error();
+        err.code = 'EEXIST';
+        throw err;
+      }),
+      catchError(err => {
+        if (err.code === 'ENOENT') {
+          return of(copyInfo);
+        }
+        throw err;
+      })
+    )
+  );
 }
 
 /**
- *
+ * Synchronize source file(s) to packages
  * @param {string[]} [files] - Source file(s)
  * @param {Partial<SyncFileOptions>} [opts]
  */
-function syncFile(
+exports.syncFile = (
   files = [],
   {
     packageDirs = [],
@@ -360,91 +446,89 @@ function syncFile(
     force = false,
     cwd = process.cwd()
   } = {}
-) {
-  if (!files.length) {
-    return EMPTY;
-  }
-  const files$ = from(files).pipe(
+) => {
+  debug('syncFile called with force: %s', force);
+  const file$ = from(files).pipe(
+    throwIfEmpty(() => new SyncMonorepoPackagesError('No files to sync!')),
     mergeMap(file =>
       from(globby(file)).pipe(
         mergeAll(),
         throwIfEmpty(
           () =>
             new SyncMonorepoPackagesError(
-              `Could not find source file "${file}"`
+              `Could not find any files matching glob "${file}"`
             )
         )
       )
     )
   );
-  debug('syncFile called with force: %s', force);
+
   const packageDirs$ = iif(
     () => Boolean(packageDirs.length),
-    from(packageDirs).pipe(
-      toArray(),
-      map(packageDirs => ({cwd, packageDirs}))
-    ),
+    from(packageDirs),
     findLernaConfig({lernaJsonPath}).pipe(
       mergeMap(({lernaConfig, lernaRoot: cwd}) =>
-        findDirectoriesByGlobs(lernaConfig.packages, {cwd}).pipe(
-          toArray(),
-          map(packageDirs => ({cwd, packageDirs}))
-        )
+        findDirectoriesByGlobs(lernaConfig.packages, {cwd})
+      )
+    )
+  ).pipe(
+    toArray(),
+    map(packageDirs => ({cwd, packageDirs})),
+    share()
+  );
+
+  return file$.pipe(
+    mergeMap(srcFilePath =>
+      packageDirs$.pipe(
+        mergeMap(({packageDirs, cwd}) =>
+          // - we might not be at the package root
+          // - we don't know where the packages are relative to us
+          // - we don't know where we are relative to srcFilePath
+          // - to that end, we need to compute the destination relative to
+          //   `cwd` (the variable) and also relative to our actual cwd.
+          // - display relative paths to the user for brevity
+          //   (we can change this later)
+          packageDirs.map(packageDir =>
+            createCopyInfo(
+              srcFilePath,
+              path.relative(
+                process.cwd(),
+                path.join(
+                  path.resolve(cwd, packageDir),
+                  path.relative(path.resolve(process.cwd(), cwd), srcFilePath)
+                )
+              )
+            )
+          )
+        ),
+        concatMap(copyInfo => {
+          debug(`attempting to copy ${copyInfo.from} to ${copyInfo.to}`);
+          return iif(
+            () => dryRun,
+            dryRunTestFile(copyInfo, force),
+            defer(() =>
+              from(cp(copyInfo.from, copyInfo.to, {overwrite: force}))
+            ).pipe(mapTo(copyInfo))
+          ).pipe(
+            catchError(err => {
+              if (err.code === 'EEXIST') {
+                return of(
+                  copyInfo.withError(
+                    new SyncMonorepoPackagesError(
+                      `Refusing to overwrite existing file ${copyInfo.to}; use --force to overwrite`
+                    )
+                  )
+                );
+              }
+              throw err;
+            })
+          );
+        })
       )
     )
   );
-  return combineLatest(files$, packageDirs$).pipe(
-    mergeMap(([srcFilePath, {packageDirs, cwd}]) =>
-      // - we might not be at the package root
-      // - we don't know where the packages are relative to us
-      // - we don't know where we are relative to srcFilePath
-      // - to that end, we need to compute the destination relative to
-      //   `cwd` (the variable) and also relative to our actual cwd.
-      // - display relative paths to the user for brevity
-      //   (we can change this later)
-      packageDirs.map(packageDir => ({
-        from: srcFilePath,
-        to: path.relative(
-          process.cwd(),
-          path.join(
-            path.resolve(cwd, packageDir),
-            path.relative(path.resolve(process.cwd(), cwd), srcFilePath)
-          )
-        )
-      }))
-    ),
-    mergeMap(copyInfo => {
-      debug('Copying %s to %s', copyInfo.from, copyInfo.to);
-      return iif(
-        () => dryRun,
-        of(copyInfo),
-        from(cp(copyInfo.from, copyInfo.to, {overwrite: force})).pipe(
-          mapTo(copyInfo)
-        )
-      );
-    })
-  );
-}
+};
 
-/**
- * @returns {OperatorFunction<CopyInfo,string>}
- */
-function serializeCopyInfo() {
-  return copyInfo$ =>
-    copyInfo$.pipe(
-      map(
-        ({from, to}) => `${logSymbols.info} Synchronized file ${from} to ${to}`
-      )
-    );
-}
-
-exports.serializePackageChange = serializePackageChange;
-exports.syncPackageJsons = syncPackageJsons;
-exports.findPackageJsons = findPackageJsons;
-exports.readPackageJson = readPackageJson;
-exports.summarizePackageChanges = summarizePackageChanges;
-exports.syncFile = syncFile;
-exports.serializeCopyInfo = serializeCopyInfo;
 exports.SyncMonorepoPackagesError = SyncMonorepoPackagesError;
 exports.DEFAULT_FIELDS = DEFAULT_FIELDS;
 
@@ -457,12 +541,6 @@ exports.DEFAULT_FIELDS = DEFAULT_FIELDS;
  * @typedef {Object} PackageInfo
  * @property {import('type-fest').PackageJson} pkg - Package json for package
  * @property {string} pkgPath - Path to package
- */
-
-/**
- * @typedef {Object} CopyInfo
- * @property {string} from
- * @property {string} to
  */
 
 /**
@@ -516,18 +594,8 @@ exports.DEFAULT_FIELDS = DEFAULT_FIELDS;
  */
 
 /**
- * A change to be applied to a package.json
- * @typedef {Object} PackageChange
- * @property {any} from
- * @property {any} to
- * @property {string} pkgPath
- * @property {string} field
- * @property {PackageJson} pkg
- */
-
-/**
  * @template T,U
- * @typedef {import('rxjs').OperatorFunction} OperatorFunction
+ * @typedef {import('rxjs').OperatorFunction<T,U>} OperatorFunction
  */
 
 /**
@@ -536,10 +604,14 @@ exports.DEFAULT_FIELDS = DEFAULT_FIELDS;
 
 /**
  * @template T
- * @typedef {import('rxjs').MonoTypeOperatorFunction} MonoTypeOperatorFunction
+ * @typedef {import('rxjs').MonoTypeOperatorFunction<T>} MonoTypeOperatorFunction
  */
 
 /**
  * @template T
- * @typedef {import('rxjs').Observable} Observable
+ * @typedef {import('rxjs').Observable<T>} Observable
+ */
+
+/**
+ * @typedef {import('./model').PackageChange} PackageChange
  */

@@ -1,26 +1,24 @@
 #!/usr/bin/env node
 const {EMPTY, iif, concat} = require('rxjs');
-const debug = require('debug')('sync-monorepo-packages:cli');
 const {info, warning, success, error} = require('log-symbols');
 const wrapAnsi = require('wrap-ansi');
-const {columns} = require('term-size')();
 const {share, map} = require('rxjs/operators');
-
 const {
   syncPackageJsons,
   syncFile,
-  serializeCopyInfo,
-  serializePackageChange,
-  summarizePackageChanges,
   SyncMonorepoPackagesError,
+  summarizePackageChanges,
+  summarizeFileCopies,
   DEFAULT_FIELDS
-} = require('./index.js');
+} = require('.');
+
+const debug = require('debug')('sync-monorepo-packages:cli');
+const {columns} = require('term-size')();
+
 const yargs = require('yargs');
 
 function obnoxiousDryRunWarning() {
-  writeOut(
-    `${warning}${warning}${warning} DRY RUN ${warning}${warning}${warning}`
-  );
+  return `${warning}${warning}${warning} DRY RUN ${warning}${warning}${warning}`;
 }
 
 /**
@@ -41,15 +39,12 @@ function writeOut(value) {
 
 /**
  * Write an error to the terminal nicely
- * @param {Error} err - Error
- * @param {boolean} verbose - If true, just print the whole thing
+ * @param {Error|string} err - Error
  */
-function writeError(err, verbose = false) {
+function writeError(err) {
   console.error(
-    err instanceof SyncMonorepoPackagesError
-      ? verbose
-        ? err
-        : wrapLine(`${error} ${err.message}`)
+    typeof err === 'string' || err instanceof SyncMonorepoPackagesError
+      ? wrapLine(`${error} ${err}`)
       : err
   );
 }
@@ -150,55 +145,57 @@ function main() {
 
   debug('argv: %O', argv);
 
-  const changes$ = iif(
+  // don't look at package.json if user passes --no-package-json
+  const packageChange$ = iif(
     () => argv['package-json'],
-    syncPackageJsons(argv).pipe(share()),
+    syncPackageJsons(argv),
     EMPTY
   );
 
-  if (argv['dry-run']) {
-    obnoxiousDryRunWarning();
-  }
+  const copyInfo$ = iif(
+    () => argv.file && argv.file.length,
+    syncFile(argv.file, argv),
+    EMPTY
+  ).pipe(share());
 
-  if (argv['dry-run'] || argv.verbose) {
-    changes$
-      .pipe(serializePackageChange())
-      .subscribe({next: writeOut, error: () => {}});
+  if (argv['dry-run']) {
+    writeOut(obnoxiousDryRunWarning());
   }
 
   if (argv.summary) {
-    changes$
-      .pipe(
-        summarizePackageChanges(),
-        map(summary => `${info} ${summary}`)
+    concat(
+      iif(
+        () => argv['package-json'],
+        packageChange$.pipe(summarizePackageChanges()),
+        EMPTY
+      ).pipe(map(summary => `${info} ${summary}`)),
+      iif(
+        () => Boolean(argv.file.length),
+        copyInfo$.pipe(summarizeFileCopies()),
+        EMPTY
+      ).pipe(
+        map(({successMsg, failMsg}) => {
+          if (successMsg) {
+            return `${success} ${successMsg}`;
+          }
+          if (failMsg) {
+            return `${error} ${failMsg}`;
+          }
+        })
       )
-      .subscribe({next: writeOut, error: () => {}});
+    ).subscribe({next: writeOut, error() {}});
   }
 
-  /**
-   * @type {import('rxjs').Observable<import('./index.js').CopyInfo>}
-   */
-  const files$ = iif(
-    () => argv.file.length,
-    syncFile(argv.file, argv).pipe(share()),
-    EMPTY
-  );
-  if (argv['dry-run'] || argv.verbose) {
-    files$
-      .pipe(serializeCopyInfo())
-      .subscribe({next: writeOut, error: () => {}});
-  }
-
-  concat(changes$, files$).subscribe({
-    complete() {
-      writeOut(`${success} Done!`);
-      if (argv['dry-run']) {
-        obnoxiousDryRunWarning();
-      }
-    },
-    error: err => {
+  concat(packageChange$, copyInfo$).subscribe({
+    next: argv.verbose || argv['dry-run'] ? writeOut : () => {},
+    error(err) {
       writeError(err);
       process.exitCode = 1;
+    },
+    complete() {
+      if (argv['dry-run']) {
+        writeOut(obnoxiousDryRunWarning());
+      }
     }
   });
 }
@@ -206,3 +203,13 @@ function main() {
 if (require.main === module) {
   main();
 }
+
+/**
+ * @template T,U
+ * @typedef {import('rxjs').OperatorFunction<T,U>} OperatorFunction
+ */
+
+/**
+ * @template T
+ * @typedef {import('rxjs').Observable<T>} Observable
+ */
