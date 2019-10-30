@@ -31,10 +31,10 @@ function wrapLine(value) {
 
 /**
  * Writes a string to the terminal nicely
- * @param {string} value
+ * @param {any} value
  */
 function writeOut(value) {
-  console.log(wrapLine(value));
+  console.log(wrapLine(String(value)));
 }
 
 /**
@@ -162,32 +162,22 @@ function main() {
     writeOut(obnoxiousDryRunWarning());
   }
 
-  if (argv.summary) {
-    concat(
-      iif(
-        () => argv['package-json'],
-        packageChange$.pipe(summarizePackageChanges()),
-        EMPTY
-      ).pipe(map(summary => `${info} ${summary}`)),
-      iif(
-        () => Boolean(argv.file.length),
-        copyInfo$.pipe(summarizeFileCopies()),
-        EMPTY
-      ).pipe(
-        map(({successMsg, failMsg}) => {
-          if (successMsg) {
-            return `${success} ${successMsg}`;
-          }
-          if (failMsg) {
-            return `${error} ${failMsg}`;
-          }
-        })
+  concat(
+    packageChange$,
+    copyInfo$.pipe(
+      map(copyInfo =>
+        copyInfo.err
+          ? `${error} ${copyInfo.err.message}`
+          : `${info} ${copyInfo}`
       )
-    ).subscribe({next: writeOut, error() {}});
-  }
-
-  concat(packageChange$, copyInfo$).subscribe({
-    next: argv.verbose || argv['dry-run'] ? writeOut : () => {},
+    )
+  ).subscribe({
+    next:
+      argv.verbose || argv['dry-run']
+        ? value => {
+            writeOut(value);
+          }
+        : () => {},
     error(err) {
       writeError(err);
       process.exitCode = 1;
@@ -198,6 +188,33 @@ function main() {
       }
     }
   });
+
+  if (argv.summary) {
+    concat(
+      iif(
+        () => argv['package-json'],
+        packageChange$.pipe(summarizePackageChanges()),
+        EMPTY
+      ),
+      iif(
+        () => Boolean(argv.file.length),
+        copyInfo$.pipe(summarizeFileCopies()),
+        EMPTY
+      )
+    )
+      .pipe(
+        map(summary => {
+          if (summary.success) {
+            return `${success} ${summary.success}`;
+          }
+          if (summary.fail) {
+            return `${error} ${summary.fail}`;
+          }
+          return `${info} ${summary.noop}`;
+        })
+      )
+      .subscribe({next: writeOut, error() {}});
+  }
 }
 
 if (require.main === module) {

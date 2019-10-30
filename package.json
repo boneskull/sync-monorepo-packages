@@ -36,16 +36,15 @@
     "node": ">=10"
   },
   "dependencies": {
-    "common-tags": "^1.8.0",
     "cp-file": "^7.0.0",
     "debug": "^4.1.1",
-    "deep-equal": "^1.1.0",
     "find-up": "^4.1.0",
     "globby": "^10.0.1",
     "load-json-file": "^6.2.0",
     "log-symbols": "^3.0.0",
     "pluralize": "^8.0.0",
     "read-pkg": "^5.2.0",
+    "rfc6902": "^3.0.4",
     "rxjs": "^6.5.3",
     "term-size": "^2.1.0",
     "wrap-ansi": "^6.0.0",

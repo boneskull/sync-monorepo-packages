@@ -1,4 +1,3 @@
-const logSymbols = require('log-symbols');
 const {inspect} = require('util');
 
 /**
@@ -9,7 +8,7 @@ class CopyInfo {
    *
    * @param {string} from - Source filepath
    * @param {string} to - Destination filepath
-   * @param {{err?: Error, success?: boolean}} - State
+   * @param {{err?: Error, success?: boolean}} opts - State
    */
   constructor(from, to, {err, success} = {}) {
     this.from = from;
@@ -20,18 +19,21 @@ class CopyInfo {
 
   toString() {
     return this.err
-      ? `${logSymbols.error} Could not synchronize file from ${this.from} to ${this.to}: ${this.err.message}`
-      : `${logSymbols.info} Synchronized file ${this.from} to ${this.to}`;
+      ? `Could not synchronize file from ${this.from} to ${this.to}: ${this.err.message}`
+      : `Synchronized file ${this.from} to ${this.to}`;
   }
 
   /**
    * Return a clone of the CopyInfo object but add an Error
-   * @param {Error} err - Errord
+   * @param {Error} err - Error
    */
   withError(err) {
     return Object.freeze(new CopyInfo(this.from, this.to, {err}));
   }
 
+  /**
+   * Return a clone of the CopyInfo object but mark as successfully copied
+   */
   withSuccess() {
     return Object.freeze(new CopyInfo(this.from, this.to, {success: true}));
   }
@@ -43,60 +45,54 @@ class CopyInfo {
 class PackageChange {
   /**
    *
-   * @param {any?} from - Original field value in destination
-   * @param {any?} to - Field value in source (to sync)
    * @param {string} pkgPath - Path to destination package.json
-   * @param {string} field - Name of top-level field to sync
-   * @param {import('type-fest').PackageJson} pkg - Original package.json
-   * @param {import('type-fest').PackageJson?} newPkg - Updated package.json
+   * @param {Operation[]} patch - JSON patch
+   * @param {PackageJson} pkg - Original package.json
+   * @param {PackageJson?} newPkg - Updated package.json
    */
-  constructor(from, to, pkgPath, field, pkg, newPkg) {
-    this.from = from;
-    this.to = to;
+  constructor(pkgPath, patch, pkg, newPkg) {
     this.pkgPath = pkgPath;
-    this.field = field;
+    this.patch = patch;
     this.pkg = pkg;
     this.newPkg = newPkg;
   }
 
-  /**
-   * Returns a human-readable inspection of a field value
-   * @param {any?} value - Field value to inspect
-   */
-  static inspectFieldValue(value) {
-    return value === undefined
-      ? '(undefined)'
-      : inspect(value, {
-          colors: true,
-          compact: true,
-          breakLength: Infinity
-        });
-  }
-
   toString() {
-    const from = PackageChange.inspectFieldValue(this.from);
-    const to = PackageChange.inspectFieldValue(this.to);
-    return `${logSymbols.info} ${this.pkgPath} - Synchronized field "${this.field}": ${from} => ${to}`;
+    return `${this.pkgPath} - Applied patch: ${inspect(this.patch, {
+      colors: true,
+      compact: true,
+      breakLength: Infinity
+    })}`;
   }
 
   withNewPackage(newPkg) {
     return Object.freeze(
-      new PackageChange(
-        this.from,
-        this.to,
-        this.pkgPath,
-        this.field,
-        this.pkg,
-        newPkg
-      )
+      new PackageChange(this.pkgPath, [...this.patch], {...this.pkg}, newPkg)
     );
   }
 }
 
-exports.createCopyInfo = (...args) => Object.freeze(new CopyInfo(...args));
+/**
+ * @param {string} from
+ * @param {string} to
+ * @param {{err?: Error, success?: boolean}} opts - State
+ */
+exports.createCopyInfo = (from, to, {err, success} = {}) =>
+  Object.freeze(new CopyInfo(from, to, {err, success}));
 
-exports.createPackageChange = (...args) =>
-  Object.freeze(new PackageChange(...args));
+/**
+ * @param {string} pkgPath
+ * @param {Operation[]} patch
+ * @param {PackageJson} pkg
+ * @param {PackageJson} [newPkg]
+ */
+exports.createPackageChange = (pkgPath, patch, pkg, newPkg) =>
+  Object.freeze(new PackageChange(pkgPath, patch, pkg, newPkg));
 
 exports.PackageChange = PackageChange;
 exports.CopyInfo = CopyInfo;
+
+/**
+ * @typedef {import('type-fest').PackageJson} PackageJson
+ * @typedef {import('rfc6902').Operation} Operation
+ */
