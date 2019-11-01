@@ -15,8 +15,17 @@ const path = require('path');
 const readPkg = require('read-pkg');
 const writePkg = require('write-pkg');
 const debug = require('debug')('sync-monorepo-packages:sync-package');
-const {findPackageJsons} = require('./find-package');
-const {createPackageChange} = require('./model');
+const findPackageJsons = require('./find-package').findPackageJsons;
+const createPackageChange = require('./model').createPackageChange;
+
+exports.DEFAULT_FIELDS = [
+  'keywords',
+  'author',
+  'repository',
+  'license',
+  'engines',
+  'publishConfig'
+];
 
 /**
  *
@@ -57,7 +66,7 @@ function pick(object, props) {
  * not matching the corresponding field in the `sourcePkg$` Observable.
  * @param {Observable<PackageJson>} sourcePkg$
  * @param {string[]} fields
- * @returns {OperatorFunction<PackageInfo,Readonly<PackageChange>>}
+ * @returns {OperatorFunction<PackageInfo,import('./model').PackageChange>}
  */
 function findChanges(sourcePkg$, fields) {
   return pkgInfo$ =>
@@ -83,7 +92,7 @@ function findChanges(sourcePkg$, fields) {
 /**
  * Applies changes to a package.json
  * @todo this is "not idiomatic"; somebody fix this
- * @returns {MonoTypeOperatorFunction<Readonly<PackageChange>>}
+ * @returns {MonoTypeOperatorFunction<import('./model').PackageChange>}
  */
 function applyChanges(dryRun = false) {
   return observable =>
@@ -116,7 +125,7 @@ function applyChanges(dryRun = false) {
 
 /**
  * Inputs changes and outputs summaries of what happened
- * @returns {OperatorFunction<Readonly<PackageChange>,Summary>}
+ * @returns {OperatorFunction<Readonly<import('./model').PackageChange>,Summary>}
  */
 exports.summarizePackageChanges = () => pkgChange$ =>
   pkgChange$.pipe(
@@ -206,10 +215,6 @@ exports.syncPackageJsons = ({
 
 /**
  * @typedef {import('type-fest').PackageJson} PackageJson
- */
-
-/**
- * @typedef {import('./model').PackageChange} PackageChange
  */
 
 /**

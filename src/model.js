@@ -3,7 +3,7 @@ const {inspect} = require('util');
 /**
  * Represents the result of a file-copy operation
  */
-class CopyInfo {
+exports.CopyInfo = class CopyInfo {
   /**
    *
    * @param {string} from - Source filepath
@@ -37,12 +37,12 @@ class CopyInfo {
   withSuccess() {
     return Object.freeze(new CopyInfo(this.from, this.to, {success: true}));
   }
-}
+};
 
 /**
  * Represents the result of a package.json modification
  */
-class PackageChange {
+exports.PackageChange = class PackageChange {
   /**
    *
    * @param {string} pkgPath - Path to destination package.json
@@ -70,7 +70,7 @@ class PackageChange {
       new PackageChange(this.pkgPath, [...this.patch], {...this.pkg}, newPkg)
     );
   }
-}
+};
 
 /**
  * @param {string} from
@@ -78,7 +78,7 @@ class PackageChange {
  * @param {{err?: Error, success?: boolean}} opts - State
  */
 exports.createCopyInfo = (from, to, {err, success} = {}) =>
-  Object.freeze(new CopyInfo(from, to, {err, success}));
+  Object.freeze(new exports.CopyInfo(from, to, {err, success}));
 
 /**
  * @param {string} pkgPath
@@ -87,10 +87,7 @@ exports.createCopyInfo = (from, to, {err, success} = {}) =>
  * @param {PackageJson} [newPkg]
  */
 exports.createPackageChange = (pkgPath, patch, pkg, newPkg) =>
-  Object.freeze(new PackageChange(pkgPath, patch, pkg, newPkg));
-
-exports.PackageChange = PackageChange;
-exports.CopyInfo = CopyInfo;
+  Object.freeze(new exports.PackageChange(pkgPath, patch, pkg, newPkg));
 
 /**
  * @typedef {import('type-fest').PackageJson} PackageJson

@@ -1,15 +1,10 @@
-const DEFAULT_FIELDS = [
-  'keywords',
-  'author',
-  'repository',
-  'license',
-  'engines',
-  'publishConfig'
-];
+const Error = require('./error');
+const SyncPackage = require('./sync-package');
+const SyncFile = require('./sync-file');
 
-exports.DEFAULT_FIELDS = DEFAULT_FIELDS;
-exports.syncFile = require('./sync-file').syncFile;
-exports.syncPackageJsons = require('./sync-package').syncPackageJsons;
-exports.SyncMonorepoPackagesError = require('./error').SyncMonorepoPackagesError;
-exports.summarizeFileCopies = require('./sync-file').summarizeFileCopies;
-exports.summarizePackageChanges = require('./sync-package').summarizePackageChanges;
+exports.SyncMonorepoPackagesError = Error.SyncMonorepoPackagesError;
+exports.DEFAULT_FIELDS = SyncPackage.DEFAULT_FIELDS;
+exports.syncFile = SyncFile.syncFile;
+exports.syncPackageJsons = SyncPackage.syncPackageJsons;
+exports.summarizeFileCopies = SyncFile.summarizeFileCopies;
+exports.summarizePackageChanges = SyncPackage.summarizePackageChanges;

@@ -6,7 +6,9 @@
   "scripts": {
     "test": "markdownlint --ignore node_modules --ignore CHANGELOG.md . && eslint .",
     "prerelease": "npm test",
-    "release": "standard-version"
+    "release": "standard-version",
+    "build": "del-cli \"src/*.d.ts\" && tsc",
+    "prepublishOnly": "npm run build"
   },
   "bin": {
     "sync-monorepo-packages": "src/cli.js"
@@ -53,6 +55,7 @@
   },
   "devDependencies": {
     "babel-eslint": "^10.0.3",
+    "del-cli": "^3.0.0",
     "eslint": "^6.5.1",
     "eslint-config-prettier": "^6.4.0",
     "eslint-config-semistandard": "^15.0.0",
@@ -71,6 +74,7 @@
     "sinon": "^7.5.0",
     "standard-version": "^7.0.0",
     "type-fest": "^0.8.1",
+    "typescript": "^3.8.0-dev.20191101",
     "unexpected": "^11.8.0",
     "unexpected-sinon": "^10.11.2"
   },
