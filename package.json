@@ -4,9 +4,9 @@
   "description": "Synchronizes one or more fields between package.json files in a monorepo",
   "main": "src/index.js",
   "scripts": {
-    "test": "markdownlint --ignore node_modules --ignore CHANGELOG.md . && eslint .",
+    "test": "markdownlint --ignore node_modules . && eslint .",
     "prerelease": "npm test",
-    "release": "standard-version",
+    "release": "standard-version -a",
     "build": "del-cli \"src/*.d.ts\" && tsc",
     "prepublishOnly": "npm run build"
   },
