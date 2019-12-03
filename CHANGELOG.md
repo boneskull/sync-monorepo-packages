@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.1](https://github.com/boneskull/sync-monorepo-packages/compare/v0.3.0...v0.3.1) (2019-12-03)
+
+
+### Bug Fixes
+
+* vuln updates ([1913aa2](https://github.com/boneskull/sync-monorepo-packages/commit/1913aa2da41ba6b72448f73da85b0fd4c515ea35))
+
 ## [0.3.0](https://github.com/boneskull/sync-monorepo-packages/compare/v0.2.0...v0.3.0) (2019-11-02)
 
 ### Features
