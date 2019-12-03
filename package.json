@@ -4,7 +4,7 @@
   "description": "Synchronizes one or more fields between package.json files in a monorepo",
   "main": "src/index.js",
   "scripts": {
-    "test": "markdownlint --ignore node_modules . && eslint .",
+    "test": "markdownlint --ignore node_modules --ignore CHANGELOG.md && eslint .",
     "prerelease": "npm test",
     "postchangelog": "prettier --write CHANGELOG.md && git add CHANGELOG.md",
     "release": "standard-version -a",
