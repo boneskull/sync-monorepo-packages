@@ -6,6 +6,7 @@
   "scripts": {
     "test": "markdownlint --ignore node_modules . && eslint .",
     "prerelease": "npm test",
+    "postchangelog": "prettier --write CHANGELOG.md && git add CHANGELOG.md",
     "release": "standard-version -a",
     "build": "del-cli \"src/*.d.ts\" && tsc",
     "prepublishOnly": "npm run build"

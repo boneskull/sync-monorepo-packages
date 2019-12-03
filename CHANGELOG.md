@@ -4,10 +4,9 @@ All notable changes to this project will be documented in this file. See [standa
 
 ## [0.3.0](https://github.com/boneskull/sync-monorepo-packages/compare/v0.2.0...v0.3.0) (2019-11-02)
 
-
 ### Features
 
-* **pkg:** provide typescript definitions ([889b6bf](https://github.com/boneskull/sync-monorepo-packages/commit/889b6bf82baa45dc3b71a89b04c3ef1148bb594a))
+- **pkg:** provide typescript definitions ([889b6bf](https://github.com/boneskull/sync-monorepo-packages/commit/889b6bf82baa45dc3b71a89b04c3ef1148bb594a))
 
 ## [0.2.0](https://github.com/boneskull/sync-monorepo-packages/compare/v0.1.1...v0.2.0) (2019-10-30)
 
