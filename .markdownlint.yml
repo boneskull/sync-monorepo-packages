@@ -7,3 +7,4 @@ no-bare-urls: false
 line-length: false
 no-emphasis-as-header: false
 no-duplicate-header: false
+header-increment: false
