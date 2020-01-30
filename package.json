@@ -38,7 +38,7 @@
     "node": ">=10"
   },
   "dependencies": {
-    "cp-file": "^7.0.0",
+    "cp-file": "github:boneskull/cp-file#issue/37",
     "debug": "^4.1.1",
     "find-up": "^4.1.0",
     "globby": "^10.0.1",

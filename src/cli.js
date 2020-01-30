@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-const {EMPTY, iif, concat} = require('rxjs');
+const {iif, concat} = require('rxjs');
 const {info, warning, success, error} = require('log-symbols');
 const wrapAnsi = require('wrap-ansi');
-const {share, map} = require('rxjs/operators');
+const {share, tap, map} = require('rxjs/operators');
 const {
   syncPackageJsons,
   syncFile,
@@ -148,73 +148,63 @@ function main() {
   // don't look at package.json if user passes --no-package-json
   const packageChange$ = iif(
     () => argv['package-json'],
-    syncPackageJsons(argv),
-    EMPTY
+    syncPackageJsons(argv).pipe(
+      tap(result => {
+        if (argv['dry-run'] || argv.verbose) {
+          writeOut(result);
+        }
+      }),
+      summarizePackageChanges()
+    )
   );
 
   const copyInfo$ = iif(
     () => argv.file && argv.file.length,
-    syncFile(argv.file, argv),
-    EMPTY
-  ).pipe(share());
+    syncFile(argv.file, argv).pipe(
+      tap(result => {
+        if (argv['dry-run'] || argv.verbose) {
+          writeOut(
+            result.err ? `${error} ${result.err.message}` : `${info} ${result}`
+          );
+        }
+      }),
+      share(),
+      summarizeFileCopies()
+    )
+  );
 
   if (argv['dry-run']) {
     writeOut(obnoxiousDryRunWarning());
   }
 
-  concat(
-    packageChange$,
-    copyInfo$.pipe(
-      map(copyInfo =>
-        copyInfo.err
-          ? `${error} ${copyInfo.err.message}`
-          : `${info} ${copyInfo}`
-      )
+  concat(packageChange$, copyInfo$)
+    .pipe(
+      map(summary => {
+        if (summary.success) {
+          return `${success} ${summary.success}`;
+        }
+        if (summary.fail) {
+          return `${error} ${summary.fail}`;
+        }
+        return `${info} ${summary.noop}`;
+      })
     )
-  ).subscribe({
-    next:
-      argv.verbose || argv['dry-run']
-        ? value => {
-            writeOut(value);
-          }
-        : () => {},
-    error(err) {
-      writeError(err);
-      process.exitCode = 1;
-    },
-    complete() {
-      if (argv['dry-run']) {
-        writeOut(obnoxiousDryRunWarning());
+    .subscribe({
+      next: result => {
+        if (argv.summary) {
+          writeOut(result);
+        }
+      },
+      complete: () => {
+        if (argv['dry-run']) {
+          writeOut(obnoxiousDryRunWarning());
+        }
+      },
+      error: err => {
+        writeError(err);
+        process.exitCode = 1;
       }
-    }
-  });
-
-  if (argv.summary) {
-    concat(
-      iif(
-        () => argv['package-json'],
-        packageChange$.pipe(summarizePackageChanges()),
-        EMPTY
-      ),
-      iif(
-        () => Boolean(argv.file.length),
-        copyInfo$.pipe(summarizeFileCopies()),
-        EMPTY
-      )
-    )
-      .pipe(
-        map(summary => {
-          if (summary.success) {
-            return `${success} ${summary.success}`;
-          }
-          if (summary.fail) {
-            return `${error} ${summary.fail}`;
-          }
-          return `${info} ${summary.noop}`;
-        })
-      )
-      .subscribe({next: writeOut, error() {}});
-  }
+    });
 }
 
 if (require.main === module) {

@@ -1,5 +1,5 @@
 const pluralize = require('pluralize');
-const {defer, concat, from, iif, of} = require('rxjs');
+const {defer, merge, from, iif, of} = require('rxjs');
 
 const cp = require('cp-file');
 const {
@@ -98,7 +98,7 @@ exports.summarizeFileCopies = () => copyInfo$ => {
       )}; use --verbose for details`
     }))
   );
-  return concat(success$, fail$).pipe(
+  return merge(success$, fail$).pipe(
     defaultIfEmpty(
       /**
        * @type {Summary}
@@ -116,14 +116,14 @@ exports.summarizeFileCopies = () => copyInfo$ => {
 exports.syncFile = (
   files = [],
   {
-    packageDirs = [],
+    packages = [],
     dryRun = false,
     lerna: lernaJsonPath = '',
     force = false,
     cwd = process.cwd()
   } = {}
 ) => {
-  debug('syncFile called with force: %s', force);
+  debug('syncFile called with force: %s & packages: %O', force, packages);
   const file$ = from(files).pipe(
     throwIfEmpty(() => new SyncMonorepoPackagesError('No files to sync!')),
     mergeMap(file =>
@@ -140,8 +140,8 @@ exports.syncFile = (
   );
 
   const packageDirs$ = iif(
-    () => Boolean(packageDirs.length),
-    from(packageDirs),
+    () => Boolean(packages.length),
+    from(packages),
     findLernaConfig({lernaJsonPath}).pipe(
       mergeMap(({lernaConfig, lernaRoot: cwd}) =>
         findDirectoriesByGlobs(lernaConfig.packages, {cwd})
@@ -149,8 +149,7 @@ exports.syncFile = (
     )
   ).pipe(
     toArray(),
-    map(packageDirs => ({cwd, packageDirs})),
-    share()
+    map(packageDirs => ({cwd, packageDirs}))
   );
 
   return file$.pipe(
@@ -178,7 +177,12 @@ exports.syncFile = (
           )
         ),
         concatMap(copyInfo => {
-          debug(`attempting to copy ${copyInfo.from} to ${copyInfo.to}`);
+          debug(
+            'attempting to copy %s to %s (overwrite: %s)',
+            copyInfo.from,
+            copyInfo.to,
+            force
+          );
           return iif(
             () => dryRun,
             dryRunTestFile(copyInfo, force),
@@ -227,6 +231,6 @@ exports.syncFile = (
  * @property {string} cwd
  * @property {string} lerna
  * @property {boolean} dryRun
- * @property {string[]} packageDirs
+ * @property {string[]} packages
  * @property {boolean} force
  */
