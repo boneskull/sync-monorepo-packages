@@ -84,7 +84,7 @@
     "nyc": "^14.1.1",
     "prettier": "^1.18.2",
     "sinon": "^7.5.0",
-    "standard-version": "^7.0.0",
+    "standard-version": "^8.0.1",
     "type-fest": "^0.8.1",
     "typescript": "^3.8.0-dev.20191101",
     "unexpected": "^11.8.0",
