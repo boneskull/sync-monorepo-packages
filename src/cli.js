@@ -93,7 +93,8 @@ function main() {
         description: 'Fields in source package.json to sync',
         nargs: 1,
         type: 'array',
-        alias: ['f', 'fields']
+        alias: ['f', 'fields'],
+        coerce: fields => fields.flatMap(field => field.split(','))
       },
       force: {
         description: `Overwrite destination file(s)`,

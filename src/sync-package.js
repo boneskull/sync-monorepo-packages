@@ -194,10 +194,7 @@ exports.syncPackageJsons = ({
     lernaJsonPath,
     packages,
     sourcePkgPath
-  }).pipe(
-    readPackageJson(),
-    findChanges(sourcePkg$, fields)
-  );
+  }).pipe(readPackageJson(), findChanges(sourcePkg$, fields));
 
   // decide if we should apply them
   return changes$.pipe(applyChanges(dryRun));
