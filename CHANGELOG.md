@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.3](https://github.com/boneskull/sync-monorepo-packages/compare/v0.3.2...v0.3.3) (2021-06-15)
+
+
+### Bug Fixes
+
+* **pkg:** dep upgrades ([d73a236](https://github.com/boneskull/sync-monorepo-packages/commit/d73a23696331d328f5f10ab59022dc37febbeaeb))
+* support for comma-separated fields ([e818bbf](https://github.com/boneskull/sync-monorepo-packages/commit/e818bbfca226b502a3d01148c4dcd8b89b751604))
+
 ### [0.3.2](https://github.com/boneskull/sync-monorepo-packages/compare/v0.3.1...v0.3.2) (2020-01-30)
 
 ### Bug Fixes
