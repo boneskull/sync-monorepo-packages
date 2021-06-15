@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.4](https://github.com/boneskull/sync-monorepo-packages/compare/v0.3.3...v0.3.4) (2021-06-15)
+
+
+### Bug Fixes
+
+* **build:** typescript crap ([f2682fe](https://github.com/boneskull/sync-monorepo-packages/commit/f2682fe497774576f14daebb6c055852fe93d3a1))
+
 ### [0.3.3](https://github.com/boneskull/sync-monorepo-packages/compare/v0.3.2...v0.3.3) (2021-06-15)
 
 ### Bug Fixes
