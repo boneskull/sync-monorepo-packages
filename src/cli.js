@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const {iif, concat} = require('rxjs');
 const {info, warning, success, error} = require('log-symbols');
+// @ts-ignore
 const wrapAnsi = require('wrap-ansi');
 const {share, tap, map} = require('rxjs/operators');
 const {
@@ -12,6 +13,7 @@ const {
   DEFAULT_FIELDS,
 } = require('.');
 
+// @ts-ignore
 const debug = require('debug')('sync-monorepo-packages:cli');
 const {columns} = require('term-size')();
 
@@ -150,8 +152,10 @@ function main() {
   // don't look at package.json if user passes --no-package-json
   const packageChange$ = iif(
     () => argv['package-json'],
+    // @ts-ignore
     syncPackageJsons(argv).pipe(
       tap((result) => {
+        // @ts-ignore
         if (argv['dry-run'] || argv.verbose) {
           writeOut(result);
         }
@@ -161,9 +165,12 @@ function main() {
   );
 
   const copyInfo$ = iif(
+    // @ts-ignore
     () => argv.file && argv.file.length,
+    // @ts-ignore
     syncFile(argv.file, argv).pipe(
       tap((result) => {
+        // @ts-ignore
         if (argv['dry-run'] || argv.verbose) {
           writeOut(
             result.err ? `${error} ${result.err.message}` : `${info} ${result}`
@@ -193,6 +200,7 @@ function main() {
     )
     .subscribe({
       next: (result) => {
+        // @ts-ignore
         if (argv.summary) {
           writeOut(result);
         }

@@ -66,6 +66,7 @@
     "yargs": "^17.0.1"
   },
   "devDependencies": {
+    "@types/yargs": "^17.0.0",
     "babel-eslint": "^10.0.3",
     "del-cli": "^4.0.0",
     "eslint": "^6.5.1",
@@ -86,7 +87,7 @@
     "sinon": "^11.1.1",
     "standard-version": "^9.3.0",
     "type-fest": "^1.2.0",
-    "typescript": "^3.8.0-dev.20191101",
+    "typescript": "^3.9.9",
     "unexpected": "^12.0.3",
     "unexpected-sinon": "^11.0.1"
   },
