@@ -14,7 +14,7 @@ const {
   map,
   mapTo,
   mergeAll,
-  mergeMap
+  mergeMap,
 } = require('rxjs/operators');
 const path = require('path');
 const globby = require('globby');
@@ -43,7 +43,7 @@ function dryRunTestFile(copyInfo, force = false) {
         err.code = 'EEXIST';
         throw err;
       }),
-      catchError(err => {
+      catchError((err) => {
         if (err.code === 'ENOENT') {
           return of(copyInfo);
         }
@@ -57,16 +57,16 @@ function dryRunTestFile(copyInfo, force = false) {
  * Provide a summary of the file copies made
  * @returns {OperatorFunction<Readonly<CopyInfo>,Summary>}
  */
-exports.summarizeFileCopies = () => copyInfo$ => {
+exports.summarizeFileCopies = () => (copyInfo$) => {
   /**
    * @returns {OperatorFunction<Readonly<CopyInfo>,{totalCopies: number, allSources: Set<string>}>}
    */
-  const summary = () => copyInfo$ =>
+  const summary = () => (copyInfo$) =>
     copyInfo$.pipe(
       reduce(
         ({totalCopies, allSources}, {from}) => ({
           totalCopies: totalCopies + 1,
-          allSources: allSources.add(from)
+          allSources: allSources.add(from),
         }),
         {totalCopies: 0, allSources: new Set()}
       ),
@@ -75,18 +75,18 @@ exports.summarizeFileCopies = () => copyInfo$ => {
 
   copyInfo$ = copyInfo$.pipe(share());
   const success$ = copyInfo$.pipe(
-    filter(copyInfo => Boolean(copyInfo.success)),
+    filter((copyInfo) => Boolean(copyInfo.success)),
     summary(),
     map(({totalCopies, allSources}) => ({
       success: `Copied ${allSources.size} ${pluralize(
         'file',
         allSources.size
-      )} to ${totalCopies} ${pluralize('package', totalCopies)}`
+      )} to ${totalCopies} ${pluralize('package', totalCopies)}`,
     }))
   );
 
   const fail$ = copyInfo$.pipe(
-    filter(copyInfo => Boolean(copyInfo.err)),
+    filter((copyInfo) => Boolean(copyInfo.err)),
     summary(),
     map(({totalCopies, allSources}) => ({
       fail: `Failed to copy ${allSources.size} ${pluralize(
@@ -95,7 +95,7 @@ exports.summarizeFileCopies = () => copyInfo$ => {
       )} to ${totalCopies} ${pluralize(
         'package',
         totalCopies
-      )}; use --verbose for details`
+      )}; use --verbose for details`,
     }))
   );
   return merge(success$, fail$).pipe(
@@ -120,13 +120,18 @@ exports.syncFile = (
     dryRun = false,
     lerna: lernaJsonPath = '',
     force = false,
-    cwd = process.cwd()
+    cwd = process.cwd(),
   } = {}
 ) => {
-  debug('syncFile called with force: %s & packages: %O', force, packages);
+  debug(
+    'syncFile called with force: %s, packages: %O, files: %O',
+    force,
+    packages,
+    files
+  );
   const file$ = from(files).pipe(
     throwIfEmpty(() => new SyncMonorepoPackagesError('No files to sync!')),
-    mergeMap(file =>
+    mergeMap((file) =>
       from(globby(file)).pipe(
         mergeAll(),
         throwIfEmpty(
@@ -149,11 +154,11 @@ exports.syncFile = (
     )
   ).pipe(
     toArray(),
-    map(packageDirs => ({cwd, packageDirs}))
+    map((packageDirs) => ({cwd, packageDirs}))
   );
 
   return file$.pipe(
-    mergeMap(srcFilePath =>
+    mergeMap((srcFilePath) =>
       packageDirs$.pipe(
         mergeMap(({packageDirs, cwd}) =>
           // - we might not be at the package root
@@ -163,7 +168,7 @@ exports.syncFile = (
           //   `cwd` (the variable) and also relative to our actual cwd.
           // - display relative paths to the user for brevity
           //   (we can change this later)
-          packageDirs.map(packageDir =>
+          packageDirs.map((packageDir) =>
             createCopyInfo(
               srcFilePath,
               path.relative(
@@ -176,7 +181,7 @@ exports.syncFile = (
             )
           )
         ),
-        concatMap(copyInfo => {
+        concatMap((copyInfo) => {
           debug(
             'attempting to copy %s to %s (overwrite: %s)',
             copyInfo.from,
@@ -190,8 +195,8 @@ exports.syncFile = (
               from(cp(copyInfo.from, copyInfo.to, {overwrite: force}))
             ).pipe(mapTo(copyInfo))
           ).pipe(
-            map(copyInfo => copyInfo.withSuccess()),
-            catchError(err => {
+            map((copyInfo) => copyInfo.withSuccess()),
+            catchError((err) => {
               if (err.code === 'EEXIST') {
                 return of(
                   copyInfo.withError(

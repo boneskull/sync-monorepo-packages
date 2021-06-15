@@ -9,7 +9,7 @@ const {
   SyncMonorepoPackagesError,
   summarizePackageChanges,
   summarizeFileCopies,
-  DEFAULT_FIELDS
+  DEFAULT_FIELDS,
 } = require('.');
 
 const debug = require('debug')('sync-monorepo-packages:cli');
@@ -56,13 +56,13 @@ function main() {
       '$0 [file..]',
       // @ts-ignore
       'Synchronize files and metadata across packages in a monorepo',
-      yargs => {
+      (yargs) => {
         yargs
           .positional('file', {
             description: 'One or more source files to sync',
             normalize: true,
             type: 'string',
-            coerce: v => (Array.isArray(v) ? v : [v])
+            coerce: (v) => (Array.isArray(v) ? v : [v]).filter(Boolean),
           })
           .example(
             '$0 --field keywords --field author -s ./foo/package.json',
@@ -86,7 +86,7 @@ function main() {
         description:
           'Do not sync; print what would have changed (implies --verbose)',
         type: 'boolean',
-        alias: 'D'
+        alias: 'D',
       },
       field: {
         default: DEFAULT_FIELDS,
@@ -94,11 +94,12 @@ function main() {
         nargs: 1,
         type: 'array',
         alias: ['f', 'fields'],
-        coerce: fields => fields.flatMap(field => field.split(','))
+        coerce: (fields) =>
+          fields.flatMap((field) => field.split(',')).filter(Boolean),
       },
       force: {
         description: `Overwrite destination file(s)`,
-        type: 'boolean'
+        type: 'boolean',
       },
       packages: {
         defaultDescription: '(use lerna.json)',
@@ -106,12 +107,12 @@ function main() {
         nargs: 1,
         normalizePath: true,
         type: 'array',
-        alias: ['p']
+        alias: ['p'],
       },
       'package-json': {
         description: 'Sync package.json',
         type: 'boolean',
-        default: true
+        default: true,
       },
       source: {
         alias: 's',
@@ -119,17 +120,17 @@ function main() {
         description: 'Path to source package.json',
         nargs: 1,
         normalizePath: true,
-        type: 'string'
+        type: 'string',
       },
       verbose: {
         description: 'Print change details',
         type: 'boolean',
-        alias: 'v'
+        alias: 'v',
       },
       summary: {
         description: 'Print summary',
         type: 'boolean',
-        default: true
+        default: true,
       },
       lerna: {
         description: 'Path to lerna.json',
@@ -137,8 +138,8 @@ function main() {
         nargs: 1,
         normalizePath: true,
         type: 'string',
-        alias: 'l'
-      }
+        alias: 'l',
+      },
     })
     .help()
     .version()
@@ -150,7 +151,7 @@ function main() {
   const packageChange$ = iif(
     () => argv['package-json'],
     syncPackageJsons(argv).pipe(
-      tap(result => {
+      tap((result) => {
         if (argv['dry-run'] || argv.verbose) {
           writeOut(result);
         }
@@ -162,7 +163,7 @@ function main() {
   const copyInfo$ = iif(
     () => argv.file && argv.file.length,
     syncFile(argv.file, argv).pipe(
-      tap(result => {
+      tap((result) => {
         if (argv['dry-run'] || argv.verbose) {
           writeOut(
             result.err ? `${error} ${result.err.message}` : `${info} ${result}`
@@ -180,7 +181,7 @@ function main() {
 
   concat(packageChange$, copyInfo$)
     .pipe(
-      map(summary => {
+      map((summary) => {
         if (summary.success) {
           return `${success} ${summary.success}`;
         }
@@ -191,7 +192,7 @@ function main() {
       })
     )
     .subscribe({
-      next: result => {
+      next: (result) => {
         if (argv.summary) {
           writeOut(result);
         }
@@ -201,10 +202,10 @@ function main() {
           writeOut(obnoxiousDryRunWarning());
         }
       },
-      error: err => {
+      error: (err) => {
         writeError(err);
         process.exitCode = 1;
-      }
+      },
     });
 }
 

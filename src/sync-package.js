@@ -8,7 +8,7 @@ const {
   map,
   mapTo,
   mergeMap,
-  tap
+  tap,
 } = require('rxjs/operators');
 const findUp = require('find-up');
 const path = require('path');
@@ -24,7 +24,7 @@ exports.DEFAULT_FIELDS = [
   'repository',
   'license',
   'engines',
-  'publishConfig'
+  'publishConfig',
 ];
 
 /**
@@ -32,14 +32,14 @@ exports.DEFAULT_FIELDS = [
  * @returns {OperatorFunction<string,Readonly<PackageInfo>>}
  */
 function readPackageJson() {
-  return pkgJsonPath$ =>
+  return (pkgJsonPath$) =>
     pkgJsonPath$.pipe(
-      mergeMap(pkgJsonPath =>
+      mergeMap((pkgJsonPath) =>
         from(readPkg({cwd: path.dirname(pkgJsonPath), normalize: false})).pipe(
-          map(pkg =>
+          map((pkg) =>
             Object.freeze({
               pkgPath: pkgJsonPath,
-              pkg
+              pkg,
             })
           )
         )
@@ -69,14 +69,14 @@ function pick(object, props) {
  * @returns {OperatorFunction<PackageInfo,import('./model').PackageChange>}
  */
 function findChanges(sourcePkg$, fields) {
-  return pkgInfo$ =>
+  return (pkgInfo$) =>
     pkgInfo$.pipe(
-      mergeMap(pkgInfo => {
+      mergeMap((pkgInfo) => {
         const {pkg, pkgPath} = pkgInfo;
         // only compare the interesting fields!
         const pkgFields = pick(pkg, fields);
         return sourcePkg$.pipe(
-          map(sourcePkg => {
+          map((sourcePkg) => {
             const srcPkgProps = pick(sourcePkg, fields);
             const patch = createPatch(pkgFields, srcPkgProps);
             if (patch.length) {
@@ -85,7 +85,7 @@ function findChanges(sourcePkg$, fields) {
           })
         );
       }),
-      filter(pkgChange => Boolean(pkgChange))
+      filter((pkgChange) => Boolean(pkgChange))
     );
 }
 
@@ -95,15 +95,15 @@ function findChanges(sourcePkg$, fields) {
  * @returns {MonoTypeOperatorFunction<import('./model').PackageChange>}
  */
 function applyChanges(dryRun = false) {
-  return observable =>
+  return (observable) =>
     observable.pipe(
-      map(pkgChange => {
+      map((pkgChange) => {
         const newPkg = {...pkgChange.pkg};
         // NOTE: applyPatch _mutates_ newPkg
         applyPatch(newPkg, pkgChange.patch);
         return pkgChange.withNewPackage(newPkg);
       }),
-      mergeMap(pkgChange =>
+      mergeMap((pkgChange) =>
         iif(
           () => dryRun,
           of(pkgChange),
@@ -127,14 +127,14 @@ function applyChanges(dryRun = false) {
  * Inputs changes and outputs summaries of what happened
  * @returns {OperatorFunction<Readonly<import('./model').PackageChange>,Summary>}
  */
-exports.summarizePackageChanges = () => pkgChange$ =>
+exports.summarizePackageChanges = () => (pkgChange$) =>
   pkgChange$.pipe(
-    filter(pkgChange => Boolean(pkgChange.newPkg)),
+    filter((pkgChange) => Boolean(pkgChange.newPkg)),
     count(),
-    map(count => {
+    map((count) => {
       if (count) {
         return {
-          success: `Synced ${count} package.json ${pluralize('file', count)}`
+          success: `Synced ${count} package.json ${pluralize('file', count)}`,
         };
       }
       return {noop: `No package.json changes needed; everything up-to-date!`};
@@ -161,7 +161,7 @@ exports.syncPackageJsons = ({
   packages = [],
   dryRun = false,
   fields = [],
-  lerna: lernaJsonPath = ''
+  lerna: lernaJsonPath = '',
 } = {}) => {
   if (sourcePkgPath && path.basename(sourcePkgPath) !== 'package.json') {
     sourcePkgPath = path.join(sourcePkgPath, 'package.json');
@@ -172,17 +172,17 @@ exports.syncPackageJsons = ({
     of(sourcePkgPath),
     defer(() =>
       from(findUp('package.json')).pipe(
-        tap(pkgJsonPath => {
+        tap((pkgJsonPath) => {
           debug('found source package.json at %s', pkgJsonPath);
         })
       )
     )
   ).pipe(
-    mergeMap(sourcePkgPath =>
+    mergeMap((sourcePkgPath) =>
       from(
         readPkg({
           cwd: normalizePkgPath(sourcePkgPath),
-          normalize: false
+          normalize: false,
         })
       )
     ),
@@ -193,7 +193,7 @@ exports.syncPackageJsons = ({
   const changes$ = findPackageJsons({
     lernaJsonPath,
     packages,
-    sourcePkgPath
+    sourcePkgPath,
   }).pipe(readPackageJson(), findChanges(sourcePkg$, fields));
 
   // decide if we should apply them

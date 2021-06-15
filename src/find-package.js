@@ -22,7 +22,7 @@ function findLernaConfig({cwd = process.cwd(), lernaJsonPath = ''} = {}) {
       () => Boolean(lernaJsonPath),
       of(lernaJsonPath),
       from(findUp('lerna.json', {cwd})).pipe(
-        tap(lernaConfigPath => {
+        tap((lernaConfigPath) => {
           if (!lernaConfigPath) {
             throw new SyncMonorepoPackagesError(
               `Could not find lerna.json, and no package locations provided. Use option "--lerna" to provide path to lerna.json, or "--packages" option to provide package path(s).`
@@ -32,19 +32,19 @@ function findLernaConfig({cwd = process.cwd(), lernaJsonPath = ''} = {}) {
         })
       )
     ).pipe(
-      mergeMap(lernaConfigPath =>
+      mergeMap((lernaConfigPath) =>
         from(loadJsonFile(lernaConfigPath)).pipe(
           map(
             /**
              * @param {LernaJson} lernaConfig
-             */ lernaConfig => ({
+             */ (lernaConfig) => ({
               lernaConfig,
-              lernaRoot: path.dirname(lernaConfigPath)
+              lernaRoot: path.dirname(lernaConfigPath),
             })
           )
         )
       ),
-      tap(lernaInfo => {
+      tap((lernaInfo) => {
         debug(
           'caching LernaInfo w/ key "%s:%s": %O',
           cwd,
@@ -68,7 +68,7 @@ function findDirectoriesByGlobs(globs, {cwd = process.cwd()} = {}) {
     globby(globs, {
       cwd,
       onlyDirectories: true,
-      expandDirectories: false
+      expandDirectories: false,
     })
   ).pipe(mergeAll());
 }
@@ -80,9 +80,9 @@ function findDirectoriesByGlobs(globs, {cwd = process.cwd()} = {}) {
  */
 function findPackageJsonsByGlobs(globs, {cwd = process.cwd()} = {}) {
   return findDirectoriesByGlobs(globs, {cwd}).pipe(
-    mergeMap(dir => from(globby(path.join(dir, PACKAGE_JSON)))),
+    mergeMap((dir) => from(globby(path.join(dir, PACKAGE_JSON)))),
     mergeAll(),
-    tap(pkgPath => {
+    tap((pkgPath) => {
       debug('found %s at %s', PACKAGE_JSON, pkgPath);
     })
   );
@@ -95,13 +95,13 @@ function findPackageJsonsByGlobs(globs, {cwd = process.cwd()} = {}) {
 function findPackageJsonsFromLernaConfig({
   cwd = process.cwd(),
   lernaJsonPath = '',
-  sourcePkgPath = ''
+  sourcePkgPath = '',
 } = {}) {
   return findLernaConfig({lernaJsonPath, cwd}).pipe(
     mergeMap(({lernaRoot, lernaConfig}) =>
       findPackageJsonsByGlobs(lernaConfig.packages, {cwd: lernaRoot})
     ),
-    filter(pkgPath => pkgPath !== sourcePkgPath)
+    filter((pkgPath) => pkgPath !== sourcePkgPath)
   );
 }
 
@@ -113,7 +113,7 @@ function findPackageJsons({
   packages: packageDirs = [],
   cwd = process.cwd(),
   lernaJsonPath = '',
-  sourcePkgPath = ''
+  sourcePkgPath = '',
 } = {}) {
   return iif(
     () => Boolean(packageDirs.length),

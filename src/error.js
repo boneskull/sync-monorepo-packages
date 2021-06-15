@@ -1,1 +1,3 @@
-exports.SyncMonorepoPackagesError = class SyncMonorepoPackagesError extends Error {};
+exports.SyncMonorepoPackagesError = class SyncMonorepoPackagesError extends (
+  Error
+) {};

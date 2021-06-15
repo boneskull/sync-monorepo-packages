@@ -61,7 +61,7 @@ exports.PackageChange = class PackageChange {
     return `${this.pkgPath} - Applied patch: ${inspect(this.patch, {
       colors: true,
       compact: true,
-      breakLength: Infinity
+      breakLength: Infinity,
     })}`;
   }
 

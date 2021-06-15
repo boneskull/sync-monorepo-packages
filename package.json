@@ -52,22 +52,22 @@
   "dependencies": {
     "cp-file": "^9.1.0",
     "debug": "^4.1.1",
-    "find-up": "^4.1.0",
-    "globby": "^10.0.1",
+    "find-up": "^5.0.0",
+    "globby": "^10.0.2",
     "load-json-file": "^6.2.0",
     "log-symbols": "^3.0.0",
     "pluralize": "^8.0.0",
     "read-pkg": "^5.2.0",
-    "rfc6902": "^3.0.4",
+    "rfc6902": "^4.0.2",
     "rxjs": "^6.5.3",
     "term-size": "^2.1.0",
     "wrap-ansi": "^6.0.0",
     "write-pkg": "^4.0.0",
-    "yargs": "^14.2.0"
+    "yargs": "^17.0.1"
   },
   "devDependencies": {
     "babel-eslint": "^10.0.3",
-    "del-cli": "^3.0.0",
+    "del-cli": "^4.0.0",
     "eslint": "^6.5.1",
     "eslint-config-prettier": "^6.4.0",
     "eslint-config-semistandard": "^15.0.0",
@@ -81,14 +81,14 @@
     "lint-staged": "^9.4.2",
     "markdownlint-cli": "^0.19.0",
     "mocha": "^6.2.2",
-    "nyc": "^14.1.1",
-    "prettier": "^1.18.2",
-    "sinon": "^7.5.0",
-    "standard-version": "^7.0.0",
-    "type-fest": "^0.8.1",
+    "nyc": "^15.1.0",
+    "prettier": "^2.3.1",
+    "sinon": "^11.1.1",
+    "standard-version": "^9.3.0",
+    "type-fest": "^1.2.0",
     "typescript": "^3.8.0-dev.20191101",
-    "unexpected": "^11.8.0",
-    "unexpected-sinon": "^10.11.2"
+    "unexpected": "^12.0.3",
+    "unexpected-sinon": "^11.0.1"
   },
   "engines": {
     "node": ">=12"
