@@ -1,0 +1,18 @@
+ {
+  "extends": [
+    "config:base",
+    ":semanticCommitTypeAll(chore)"
+  ],
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "automerge": true
+    },
+    {
+      "matchPackagePatterns": ["^eslint"],
+      "groupName": "eslint packages"
+    }
+  ],
+  "baseBranches": ["main"],
+  "semanticCommits": "enabled"
+}
