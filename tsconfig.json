@@ -2,6 +2,7 @@
   "compilerOptions": {
     "allowJs": true,
     "checkJs": true,
+    "outDir": "types",
     "declaration": true,
     "emitDeclarationOnly": true
   },

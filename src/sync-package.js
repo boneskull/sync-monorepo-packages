@@ -15,17 +15,19 @@ const path = require('path');
 const readPkg = require('read-pkg');
 const writePkg = require('write-pkg');
 const debug = require('debug')('sync-monorepo-packages:sync-package');
-const findPackageJsons = require('./find-package').findPackageJsons;
-const createPackageChange = require('./model').createPackageChange;
+const {findPackageJsons} = require('./find-package');
+const {createPackageChange} = require('./model');
 
-exports.DEFAULT_FIELDS = [
-  'keywords',
-  'author',
-  'repository',
-  'license',
-  'engines',
-  'publishConfig',
-];
+exports.DEFAULT_FIELDS = Object.freeze(
+  /** @type {const} */ ([
+    'keywords',
+    'author',
+    'repository',
+    'license',
+    'engines',
+    'publishConfig',
+  ])
+);
 
 /**
  *
