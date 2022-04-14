@@ -29,12 +29,15 @@
   ],
   "scripts": {
     "build": "tsc",
+    "lint": "eslint .",
+    "lint:md": "markdownlint README.md",
     "lint-staged": "lint-staged",
     "prepare": "husky install",
     "prepublishOnly": "npm run build",
     "prerelease": "npm test",
     "release": "standard-version -a",
-    "test": "markdownlint README.md && eslint . && npm run build"
+    "test": "npm run test:unit && npm run build && npm run lint && npm run lint:md",
+    "test:unit": "mocha"
   },
   "lint-staged": {
     "*.js": [
@@ -82,6 +85,7 @@
     "eslint-plugin-prettier": "3.4.0",
     "eslint-plugin-promise": "4.3.1",
     "eslint-plugin-standard": "4.1.0",
+    "execa": "5.1.1",
     "husky": "6.0.0",
     "lint-staged": "9.5.0",
     "markdownlint-cli": "0.31.1",

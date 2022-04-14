@@ -1,6 +1,6 @@
-import expect from 'unexpected';
-import sinon from 'sinon';
-import unexpectedSinon from 'unexpected-sinon';
+const expect = require('unexpected');
+const unexpectedSinon = require('unexpected-sinon');
+const sinon = require('sinon');
 
 global.sinon = sinon;
 
