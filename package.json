@@ -34,7 +34,7 @@
     "prepublishOnly": "npm run build",
     "prerelease": "npm test",
     "release": "standard-version -a",
-    "test": "markdownlint \"*.md\" && eslint ."
+    "test": "markdownlint README.md && eslint ."
   },
   "lint-staged": {
     "*.js": [
