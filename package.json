@@ -65,7 +65,7 @@
     "rxjs": "^6.5.3",
     "term-size": "^2.1.0",
     "wrap-ansi": "^6.0.0",
-    "write-pkg": "^4.0.0",
+    "write-pkg": "^5.0.0",
     "yargs": "^17.4.1"
   },
   "devDependencies": {
