@@ -1,0 +1,17 @@
+ {
+  "extends": [
+    "config:base",
+    ":semanticCommitTypeAll(chore)",
+  ],
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "automerge": true
+    }
+  ],
+  "baseBranches": ["master"],
+  "semanticCommits": "enabled",
+  "semanticCommitScope": "{{parentDir}}",
+  "schedule": ["after 10pm and before 5:00am"],
+  "timezone": "America/Vancouver"
+}
