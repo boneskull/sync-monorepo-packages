@@ -89,7 +89,7 @@
     "husky": "7.0.4",
     "lint-staged": "9.5.0",
     "markdownlint-cli": "0.31.1",
-    "mocha": "6.2.3",
+    "mocha": "9.2.2",
     "prettier": "2.6.2",
     "standard-version": "9.3.2",
     "type-fest": "2.12.2",
