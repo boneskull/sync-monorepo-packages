@@ -7,10 +7,6 @@
       "automerge": true
     },
     {
-      "matchPackagePrefixes": ["eslint"],
-      "groupName": "eslint packages"
-    },
-    {
       "matchPackagePrefixes": ["@types"],
       "groupName": "types packages"
     }
