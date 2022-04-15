@@ -1,15 +1,8 @@
 const pluralize = require('pluralize');
 const {defer, from, iif, of} = require('rxjs');
 const {applyPatch, createPatch} = require('rfc6902');
-const {
-  filter,
-  count,
-  share,
-  map,
-  mapTo,
-  mergeMap,
-  tap,
-} = require('rxjs/operators');
+const {pick, filterNullish} = require('./util');
+const {count, share, map, mapTo, mergeMap, tap} = require('rxjs/operators');
 const findUp = require('find-up');
 const path = require('path');
 const readPkg = require('read-pkg');
@@ -50,24 +43,10 @@ function readPackageJson() {
 }
 
 /**
- * Given an object, return a new object picking only `props` from original
- * @template T
- * @param {T} object - Any object
- * @param {string[]} props - List of props
- * @returns {Partial<T>}
- */
-function pick(object, props) {
-  return props.reduce(
-    (entries, field) => ({...entries, [field]: object[field]}),
-    {}
-  );
-}
-
-/**
  * Finds any fields in a source Observable of {@link PackageJson} objects
  * not matching the corresponding field in the `sourcePkg$` Observable.
  * @param {Observable<PackageJson>} sourcePkg$
- * @param {string[]} fields
+ * @param {(keyof PackageJson)[]} fields
  * @returns {OperatorFunction<PackageInfo,import('./model').PackageChange>}
  */
 function findChanges(sourcePkg$, fields) {
@@ -76,10 +55,10 @@ function findChanges(sourcePkg$, fields) {
       mergeMap((pkgInfo) => {
         const {pkg, pkgPath} = pkgInfo;
         // only compare the interesting fields!
-        const pkgFields = pick(pkg, fields);
+        const pkgFields = pick(pkg, ...fields);
         return sourcePkg$.pipe(
           map((sourcePkg) => {
-            const srcPkgProps = pick(sourcePkg, fields);
+            const srcPkgProps = pick(sourcePkg, ...fields);
             const patch = createPatch(pkgFields, srcPkgProps);
             if (patch.length) {
               return createPackageChange(pkgPath, patch, pkg);
@@ -87,7 +66,7 @@ function findChanges(sourcePkg$, fields) {
           })
         );
       }),
-      filter((pkgChange) => Boolean(pkgChange))
+      filterNullish()
     );
 }
 
@@ -114,7 +93,8 @@ function applyChanges(dryRun = false) {
               writePkg(
                 pkgChange.pkgPath,
                 /**
-                 * @type {import('type-fest').JsonObject}
+                 * this is horrid, but there's a mismatch here
+                 * @type {import('write-pkg/node_modules/type-fest').JsonObject}
                  */ (pkgChange.newPkg),
                 {normalize: false}
               )
@@ -131,7 +111,7 @@ function applyChanges(dryRun = false) {
  */
 exports.summarizePackageChanges = () => (pkgChange$) =>
   pkgChange$.pipe(
-    filter((pkgChange) => Boolean(pkgChange.newPkg)),
+    filterNullish(),
     count(),
     map((count) => {
       if (count) {
@@ -176,7 +156,8 @@ exports.syncPackageJsons = ({
       from(findUp('package.json')).pipe(
         tap((pkgJsonPath) => {
           debug('found source package.json at %s', pkgJsonPath);
-        })
+        }),
+        filterNullish()
       )
     )
   ).pipe(
@@ -222,16 +203,16 @@ exports.syncPackageJsons = ({
  */
 
 /**
- * @typedef {Object} SyncPackageJsonsOptions
+ * @typedef SyncPackageJsonsOptions
  * @property {string} sourcePkgPath - Path to source package.json
  * @property {string[]} packages - Where to find packages; otherwise use Lerna
  * @property {boolean} dryRun - If `true`, print changes and exit
- * @property {string[]} fields - Fields to copy
+ * @property {(keyof PackageJson)[]} fields - Fields to copy
  * @property {string} lerna - Path to lerna.json
  */
 
 /**
- * @typedef {Object} PackageInfo
+ * @typedef PackageInfo
  * @property {import('type-fest').PackageJson} pkg - Package json for package
  * @property {string} pkgPath - Path to package
  */

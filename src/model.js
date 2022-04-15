@@ -48,7 +48,7 @@ exports.PackageChange = class PackageChange {
    * @param {string} pkgPath - Path to destination package.json
    * @param {Operation[]} patch - JSON patch
    * @param {PackageJson} pkg - Original package.json
-   * @param {PackageJson?} newPkg - Updated package.json
+   * @param {PackageJson} [newPkg] - Updated package.json
    */
   constructor(pkgPath, patch, pkg, newPkg) {
     this.pkgPath = pkgPath;
@@ -65,6 +65,11 @@ exports.PackageChange = class PackageChange {
     })}`;
   }
 
+  /**
+   *
+   * @param {PackageJson} newPkg
+   * @returns
+   */
   withNewPackage(newPkg) {
     return Object.freeze(
       new PackageChange(this.pkgPath, [...this.patch], {...this.pkg}, newPkg)

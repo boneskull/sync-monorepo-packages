@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-const {iif, concat} = require('rxjs');
+const {iif, concat, EMPTY} = require('rxjs');
 const {info, warning, success, error} = require('log-symbols');
 const wrapAnsi = require('wrap-ansi');
 const {share, tap, map} = require('rxjs/operators');
@@ -169,11 +169,12 @@ function main() {
               }
             }),
             summarizePackageChanges()
-          )
+          ),
+          EMPTY
         );
 
         const copyInfo$ = iif(
-          () => Boolean(argv.file.length),
+          () => Boolean(argv.file?.length),
           syncFile(argv.file, argv).pipe(
             tap((result) => {
               if (dryRun || argv.verbose) {
@@ -186,7 +187,8 @@ function main() {
             }),
             share(),
             summarizeFileCopies()
-          )
+          ),
+          EMPTY
         );
 
         if (dryRun) {

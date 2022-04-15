@@ -1,2 +1,3 @@
 coverage/
 types
+**/*.d.ts

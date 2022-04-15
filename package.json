@@ -1,7 +1,7 @@
 {
   "name": "sync-monorepo-packages",
   "version": "0.3.4",
-  "description": "Synchronizes one or more fields between package.json files in a monorepo",
+  "description": "Synchronize files and metadata across packages in a monorepo",
   "keywords": [
     "lerna",
     "monorepo",
@@ -21,23 +21,25 @@
   "license": "Apache-2.0",
   "author": "Christopher Hiller <boneskull@boneskull.com> (https://boneskull.com/)",
   "main": "src/index.js",
+  "types": "types/src/index.d.ts",
   "bin": {
     "sync-monorepo-packages": "src/cli.js"
   },
   "files": [
-    "src"
+    "src",
+    "types/src/*.d.ts"
   ],
   "scripts": {
     "build": "tsc",
     "lint": "eslint .",
-    "lint:md": "markdownlint README.md",
     "lint-staged": "lint-staged",
+    "lint:md": "markdownlint README.md",
     "prepare": "husky install",
     "prepublishOnly": "npm run build",
     "prerelease": "npm test",
     "release": "standard-version -a",
-    "test": "npm run test:unit && npm run build && npm run lint && npm run lint:md",
-    "test:unit": "mocha"
+    "test": "npm run test:e2e && npm run build && npm run lint && npm run lint:md",
+    "test:e2e": "mocha test/e2e"
   },
   "lint-staged": {
     "*.js": [
@@ -53,11 +55,10 @@
     "singleQuote": true
   },
   "dependencies": {
-    "cp-file": "^9.1.0",
     "debug": "^4.1.1",
     "find-up": "^5.0.0",
-    "globby": "^10.0.2",
-    "load-json-file": "^6.2.0",
+    "fs-extra": "10.0.1",
+    "globby": "10.0.2",
     "log-symbols": "^3.0.0",
     "pluralize": "^8.0.0",
     "read-pkg": "^5.2.0",
@@ -70,12 +71,14 @@
   },
   "devDependencies": {
     "@types/debug": "4.1.7",
+    "@types/fs-extra": "9.0.13",
+    "@types/mocha": "9.1.0",
     "@types/node": "17.0.24",
     "@types/pluralize": "0.0.29",
+    "@types/sinon": "10.0.11",
     "@types/wrap-ansi": "3.0.0",
     "@types/yargs": "17.0.10",
     "babel-eslint": "10.1.0",
-    "del-cli": "4.0.1",
     "eslint": "6.8.0",
     "eslint-config-prettier": "6.15.0",
     "eslint-config-semistandard": "15.0.1",
@@ -90,17 +93,13 @@
     "lint-staged": "9.5.0",
     "markdownlint-cli": "0.31.1",
     "mocha": "6.2.3",
-    "nyc": "15.1.0",
     "prettier": "2.6.2",
-    "sinon": "13.0.2",
     "standard-version": "9.3.2",
-    "type-fest": "1.4.0",
+    "type-fest": "2.12.2",
     "typescript": "4.6.3",
-    "unexpected": "12.0.4",
-    "unexpected-sinon": "11.0.1"
+    "unexpected": "12.0.4"
   },
   "engines": {
     "node": ">=12"
-  },
-  "types": "types/index.d.ts"
+  }
 }
