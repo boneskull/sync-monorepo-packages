@@ -7,14 +7,6 @@
       "automerge": true
     },
     {
-      "matchUpdateTypes": ["major"],
-      "matchDepTypes": ["devDependencies"]
-    },
-    {
-      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      "matchDepTypes": ["dependencies"]
-    },
-    {
       "matchPackagePrefixes": ["eslint"],
       "groupName": "eslint packages"
     },
