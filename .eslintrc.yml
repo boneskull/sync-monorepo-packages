@@ -2,6 +2,8 @@ root: true
 extends:
   - standard
   - plugin:prettier/recommended
+parserOptions:
+  sourceType: script
 rules:
   standard/computed-property-even-spacing: off
   semi:
@@ -10,14 +12,6 @@ rules:
   no-extra-semi: error
 overrides:
   - files:
-      - .mocharc.js
-    parserOptions:
-      sourceType: script
-  - files:
       - test/**/*.spec.js
     env:
       mocha: true
-    globals:
-      expect: false
-      sinon: false
-      proxyquire: false
