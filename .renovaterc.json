@@ -1,18 +1,27 @@
- {
-  "extends": [
-    "config:base",
-    ":semanticCommitTypeAll(chore)"
-  ],
+{
+  "extends": ["config:base", ":semanticCommitTypeAll(chore)", "npm:unpublishSafe"],
   "packageRules": [
     {
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "matchDepTypes": ["devDependencies"],
       "automerge": true
     },
     {
-      "matchPackagePatterns": ["^eslint"],
+      "matchUpdateTypes": ["major"],
+      "matchDepTypes": ["devDependencies"]
+    },
+    {
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "matchDepTypes": ["dependencies"]
+    },
+    {
+      "matchPackagePrefixes": ["eslint"],
       "groupName": "eslint packages"
+    },
+    {
+      "matchPackagePrefixes": ["@types"],
+      "groupName": "types packages"
     }
   ],
-  "baseBranches": ["main"],
   "semanticCommits": "enabled"
 }
