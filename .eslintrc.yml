@@ -1,10 +1,13 @@
 root: true
-parser: babel-eslint
 extends:
-  - semistandard
+  - standard
   - plugin:prettier/recommended
 rules:
   standard/computed-property-even-spacing: off
+  semi:
+    - error
+    - always
+  no-extra-semi: error
 overrides:
   - files:
       - .mocharc.js
