@@ -1,10 +1,11 @@
 const findUp = require('find-up');
-const globby = require('globby');
+const glob = require('globby');
+const {filterNullish} = require('./util');
 const {defer, from, iif, of} = require('rxjs');
 const {filter, map, mergeAll, mergeMap, tap} = require('rxjs/operators');
 const {SyncMonorepoPackagesError} = require('./error');
 const debug = require('debug')('sync-monorepo-packages:find-package');
-const loadJsonFile = require('load-json-file');
+const fs = require('fs-extra');
 const path = require('path');
 
 const PACKAGE_JSON = 'package.json';
@@ -14,13 +15,13 @@ const PACKAGE_JSON = 'package.json';
  * @param {Partial<FindLernaConfigOptions>} [opts]
  * @returns {Observable<LernaInfo>}
  */
-function findLernaConfig({cwd = process.cwd(), lernaJsonPath = ''} = {}) {
+function findLernaConfig({cwd = process.cwd(), lernaJsonPath} = {}) {
   return iif(
     () => findLernaConfig.cache.has(`${cwd}:${lernaJsonPath}`),
     defer(() => of(findLernaConfig.cache.get(`${cwd}:${lernaJsonPath}`))),
     iif(
       () => Boolean(lernaJsonPath),
-      of(lernaJsonPath),
+      of(/** @type {string} */ (lernaJsonPath)),
       from(findUp('lerna.json', {cwd})).pipe(
         tap((lernaConfigPath) => {
           if (!lernaConfigPath) {
@@ -29,11 +30,12 @@ function findLernaConfig({cwd = process.cwd(), lernaJsonPath = ''} = {}) {
             );
           }
           debug(`found lerna config at %s`, lernaConfigPath);
-        })
+        }),
+        filterNullish()
       )
     ).pipe(
       mergeMap((lernaConfigPath) =>
-        from(loadJsonFile(lernaConfigPath)).pipe(
+        from(fs.readJSON(lernaConfigPath)).pipe(
           map(
             /**
              * @param {LernaJson} lernaConfig
@@ -65,7 +67,7 @@ findLernaConfig.cache = new Map();
  */
 function findDirectoriesByGlobs(globs, {cwd = process.cwd()} = {}) {
   return from(
-    globby(globs, {
+    glob(globs, {
       cwd,
       onlyDirectories: true,
       expandDirectories: false,
@@ -80,7 +82,7 @@ function findDirectoriesByGlobs(globs, {cwd = process.cwd()} = {}) {
  */
 function findPackageJsonsByGlobs(globs, {cwd = process.cwd()} = {}) {
   return findDirectoriesByGlobs(globs, {cwd}).pipe(
-    mergeMap((dir) => from(globby(path.join(dir, PACKAGE_JSON)))),
+    mergeMap((dir) => from(glob(path.join(dir, PACKAGE_JSON)))),
     mergeAll(),
     tap((pkgPath) => {
       debug('found %s at %s', PACKAGE_JSON, pkgPath);
@@ -128,7 +130,7 @@ exports.findPackageJsonsByGlobs = findPackageJsonsByGlobs;
 exports.findPackageJsons = findPackageJsons;
 
 /**
- * @typedef {Object} FindPackageJsonsFromLernaConfig
+ * @typedef FindPackageJsonsFromLernaConfig
  * @property {string[]} packageDirs
  * @property {string} cwd
  * @property {string} lernaJsonPath
@@ -136,19 +138,19 @@ exports.findPackageJsons = findPackageJsons;
  */
 
 /**
- * @typedef {Object} LernaInfo
+ * @typedef LernaInfo
  * @property {string} lernaRoot
  * @property {LernaJson} lernaConfig
  */
 
 /**
- * @typedef {Object} FindLernaConfigOptions
+ * @typedef FindLernaConfigOptions
  * @property {string} cwd
  * @property {string} lernaJsonPath
  */
 
 /**
- * @typedef {Object} FindByGlobsOptions
+ * @typedef FindByGlobsOptions
  * @property {string} cwd
  */
 
@@ -158,12 +160,12 @@ exports.findPackageJsons = findPackageJsons;
  */
 
 /**
- * @typedef {Object} LernaJson
+ * @typedef LernaJson
  * @property {string[]} packages - Where Lerna finds packages
  */
 
 /**
- * @typedef {Object} FindPackageJsonsOptions
+ * @typedef FindPackageJsonsOptions
  * @property {string[]} packages
  * @property {string} cwd
  * @property {string} lernaJsonPath

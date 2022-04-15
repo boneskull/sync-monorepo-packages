@@ -4,7 +4,9 @@
     "checkJs": true,
     "outDir": "types",
     "declaration": true,
-    "emitDeclarationOnly": true
+    "emitDeclarationOnly": true,
+    "strict": true,
+    "types": ["mocha"]
   },
-  "include": ["src/*.js"]
+  "include": ["src", "test"]
 }

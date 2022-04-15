@@ -12,6 +12,9 @@ const {
   DEFAULT_FIELDS,
 } = require('./index');
 
+const pkgJson = require('fs-extra').readJsonSync(
+  require.resolve('../package.json')
+);
 const debug = require('debug')('sync-monorepo-packages:cli');
 const {columns} = require('term-size')();
 
@@ -59,7 +62,7 @@ function main() {
     .scriptName('sync-monorepo-packages')
     .usage(
       '$0 [file..]',
-      'Synchronize files and metadata across packages in a monorepo',
+      pkgJson.description,
       (yargs) =>
         yargs
           .positional('file', {
@@ -90,7 +93,6 @@ function main() {
               alias: ['f', 'fields'],
               coerce:
                 /**
-                 *
                  * @param {string[]} fields
                  * @returns {string[]}
                  */

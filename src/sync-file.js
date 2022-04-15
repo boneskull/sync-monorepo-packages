@@ -1,7 +1,7 @@
 const pluralize = require('pluralize');
 const {defer, merge, from, iif, of} = require('rxjs');
 
-const cp = require('cp-file');
+const fs = require('fs-extra');
 const {
   catchError,
   defaultIfEmpty,
@@ -17,18 +17,17 @@ const {
   mergeMap,
 } = require('rxjs/operators');
 const path = require('path');
-const globby = require('globby');
+const glob = require('globby');
 const debug = require('debug')('sync-monorepo-packages:sync-file');
 const {createCopyInfo} = require('./model');
 const {SyncMonorepoPackagesError} = require('./error');
-const {promises: fs} = require('fs');
 const {findLernaConfig, findDirectoriesByGlobs} = require('./find-package');
 
 /**
  * For dry-run mode, if a file were to be copied, but force is
  * false, we should throw.
  * @param {CopyInfo} copyInfo
- * @param {boolean?} force
+ * @param {boolean} [force]
  */
 function dryRunTestFile(copyInfo, force = false) {
   return iif(
@@ -132,7 +131,7 @@ exports.syncFile = (
   const file$ = from(files).pipe(
     throwIfEmpty(() => new SyncMonorepoPackagesError('No files to sync!')),
     mergeMap((file) =>
-      from(globby(file)).pipe(
+      from(glob(file)).pipe(
         mergeAll(),
         throwIfEmpty(
           () =>
@@ -192,7 +191,7 @@ exports.syncFile = (
             () => dryRun,
             dryRunTestFile(copyInfo, force),
             defer(() =>
-              from(cp(copyInfo.from, copyInfo.to, {overwrite: force}))
+              from(fs.copy(copyInfo.from, copyInfo.to, {overwrite: force}))
             ).pipe(mapTo(copyInfo))
           ).pipe(
             map((copyInfo) => copyInfo.withSuccess()),
@@ -225,14 +224,14 @@ exports.syncFile = (
  */
 
 /**
- * @typedef {Object} Summary
+ * @typedef Summary
  * @property {string} [fail] - Failure message
  * @property {string} [success] - Success message
  * @property {string} [noop] - No-op message
  */
 
 /**
- * @typedef {Object} SyncFileOptions
+ * @typedef SyncFileOptions
  * @property {string} cwd
  * @property {string} lerna
  * @property {boolean} dryRun
