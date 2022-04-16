@@ -1,4 +1,5 @@
-const {pipe, filter} = require('rxjs');
+const {pipe} = require('rxjs');
+const {filter} = require('rxjs/operators');
 
 /**
  * @template T
