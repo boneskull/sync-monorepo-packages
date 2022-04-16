@@ -55,7 +55,7 @@
     "singleQuote": true
   },
   "dependencies": {
-    "debug": "4.1.1",
+    "debug": "4.3.4",
     "find-up": "5.0.0",
     "fs-extra": "10.0.1",
     "globby": "10.0.2",
