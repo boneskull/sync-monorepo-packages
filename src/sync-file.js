@@ -26,7 +26,7 @@ const {findLernaConfig, findDirectoriesByGlobs} = require('./find-package');
 /**
  * For dry-run mode, if a file were to be copied, but force is
  * false, we should throw.
- * @param {CopyInfo} copyInfo
+ * @param {FileCopyResult} copyInfo
  * @param {boolean} [force]
  */
 function dryRunTestFile(copyInfo, force = false) {
@@ -54,11 +54,11 @@ function dryRunTestFile(copyInfo, force = false) {
 
 /**
  * Provide a summary of the file copies made
- * @returns {OperatorFunction<Readonly<CopyInfo>,Summary>}
+ * @returns {OperatorFunction<Readonly<FileCopyResult>,Summary>}
  */
 exports.summarizeFileCopies = () => (copyInfo$) => {
   /**
-   * @returns {OperatorFunction<Readonly<CopyInfo>,{totalCopies: number, allSources: Set<string>}>}
+   * @returns {OperatorFunction<Readonly<FileCopyResult>,{totalCopies: number, allSources: Set<string>}>}
    */
   const summary = () => (copyInfo$) =>
     copyInfo$.pipe(
@@ -220,7 +220,7 @@ exports.syncFile = (
  */
 
 /**
- * @typedef {import('./model').FileCopyResult} CopyInfo
+ * @typedef {import('./model').FileCopyResult} FileCopyResult
  */
 
 /**
