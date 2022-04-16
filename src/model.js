@@ -1,14 +1,13 @@
 const {inspect} = require('util');
 
 /**
- * Represents the result of a file-copy operation
+ * Represents the result of a file-copy operation. Do not use directly; use {@linkcode createFileCopyResult} instead.
  */
-exports.CopyInfo = class CopyInfo {
+class FileCopyResult {
   /**
-   *
    * @param {string} from - Source filepath
    * @param {string} to - Destination filepath
-   * @param {{err?: Error, success?: boolean}} opts - State
+   * @param {FileCopyResultOpts} [opts] - Options
    */
   constructor(from, to, {err, success} = {}) {
     this.from = from;
@@ -24,25 +23,27 @@ exports.CopyInfo = class CopyInfo {
   }
 
   /**
-   * Return a clone of the CopyInfo object but add an Error
+   * Return a clone of this object, but add an Error
    * @param {Error} err - Error
    */
   withError(err) {
-    return Object.freeze(new CopyInfo(this.from, this.to, {err}));
+    return Object.freeze(new FileCopyResult(this.from, this.to, {err}));
   }
 
   /**
-   * Return a clone of the CopyInfo object but mark as successfully copied
+   * Return a clone of thios object, but mark as successfully copied
    */
   withSuccess() {
-    return Object.freeze(new CopyInfo(this.from, this.to, {success: true}));
+    return Object.freeze(
+      new FileCopyResult(this.from, this.to, {success: true})
+    );
   }
-};
+}
 
 /**
- * Represents the result of a package.json modification
+ * Represents the result of a `package.json` modification
  */
-exports.PackageChange = class PackageChange {
+class PkgChangeResult {
   /**
    *
    * @param {string} pkgPath - Path to destination package.json
@@ -68,33 +69,45 @@ exports.PackageChange = class PackageChange {
   /**
    *
    * @param {PackageJson} newPkg
-   * @returns
+   * @returns {Readonly<PkgChangeResult>}
    */
   withNewPackage(newPkg) {
     return Object.freeze(
-      new PackageChange(this.pkgPath, [...this.patch], {...this.pkg}, newPkg)
+      new PkgChangeResult(this.pkgPath, [...this.patch], {...this.pkg}, newPkg)
     );
   }
-};
+}
 
 /**
+ * Creates a {@linkcode FileCopyResult} object.
  * @param {string} from
  * @param {string} to
- * @param {{err?: Error, success?: boolean}} opts - State
+ * @param {FileCopyResultOpts} [opts]
+ * @returns {Readonly<FileCopyResult>}
  */
-exports.createCopyInfo = (from, to, {err, success} = {}) =>
-  Object.freeze(new exports.CopyInfo(from, to, {err, success}));
+exports.createFileCopyResult = (from, to, {err, success} = {}) =>
+  Object.freeze(new FileCopyResult(from, to, {err, success}));
 
 /**
+ * Creates a {@linkcode PkgChangeResult} object.
  * @param {string} pkgPath
  * @param {Operation[]} patch
  * @param {PackageJson} pkg
  * @param {PackageJson} [newPkg]
  */
-exports.createPackageChange = (pkgPath, patch, pkg, newPkg) =>
-  Object.freeze(new exports.PackageChange(pkgPath, patch, pkg, newPkg));
+exports.createPkgChangeResult = (pkgPath, patch, pkg, newPkg) =>
+  Object.freeze(new PkgChangeResult(pkgPath, patch, pkg, newPkg));
 
 /**
  * @typedef {import('type-fest').PackageJson} PackageJson
  * @typedef {import('rfc6902').Operation} Operation
  */
+
+/**
+ * @typedef FileCopyResultOpts
+ * @property {Error} [err]
+ * @property {boolean} [success]
+ */
+
+exports.FileCopyResult = FileCopyResult;
+exports.PkgChangeResult = PkgChangeResult;

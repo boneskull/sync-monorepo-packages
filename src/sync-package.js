@@ -9,8 +9,12 @@ const readPkg = require('read-pkg');
 const writePkg = require('write-pkg');
 const debug = require('debug')('sync-monorepo-packages:sync-package');
 const {findPackageJsons} = require('./find-package');
-const {createPackageChange} = require('./model');
+const {createPkgChangeResult} = require('./model');
 
+/**
+ * These are the default fields which this program will sync from the
+ * monorepo root `package.json` to its sub-packages.
+ */
 exports.DEFAULT_FIELDS = Object.freeze(
   /** @type {const} */ ([
     'keywords',
@@ -23,7 +27,7 @@ exports.DEFAULT_FIELDS = Object.freeze(
 );
 
 /**
- *
+ * Reads a `package.json`
  * @returns {OperatorFunction<string,Readonly<PackageInfo>>}
  */
 function readPackageJson() {
@@ -47,7 +51,7 @@ function readPackageJson() {
  * not matching the corresponding field in the `sourcePkg$` Observable.
  * @param {Observable<PackageJson>} sourcePkg$
  * @param {(keyof PackageJson)[]} fields
- * @returns {OperatorFunction<PackageInfo,import('./model').PackageChange>}
+ * @returns {OperatorFunction<PackageInfo,import('./model').PkgChangeResult>}
  */
 function findChanges(sourcePkg$, fields) {
   return (pkgInfo$) =>
@@ -61,7 +65,7 @@ function findChanges(sourcePkg$, fields) {
             const srcPkgProps = pick(sourcePkg, ...fields);
             const patch = createPatch(pkgFields, srcPkgProps);
             if (patch.length) {
-              return createPackageChange(pkgPath, patch, pkg);
+              return createPkgChangeResult(pkgPath, patch, pkg);
             }
           })
         );
@@ -73,7 +77,7 @@ function findChanges(sourcePkg$, fields) {
 /**
  * Applies changes to a package.json
  * @todo this is "not idiomatic"; somebody fix this
- * @returns {MonoTypeOperatorFunction<import('./model').PackageChange>}
+ * @returns {MonoTypeOperatorFunction<import('./model').PkgChangeResult>}
  */
 function applyChanges(dryRun = false) {
   return (observable) =>
@@ -107,7 +111,7 @@ function applyChanges(dryRun = false) {
 
 /**
  * Inputs changes and outputs summaries of what happened
- * @returns {OperatorFunction<Readonly<import('./model').PackageChange>,Summary>}
+ * @returns {OperatorFunction<Readonly<import('./model').PkgChangeResult>,Summary>}
  */
 exports.summarizePackageChanges = () => (pkgChange$) =>
   pkgChange$.pipe(

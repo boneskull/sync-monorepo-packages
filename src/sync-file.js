@@ -19,7 +19,7 @@ const {
 const path = require('path');
 const glob = require('globby');
 const debug = require('debug')('sync-monorepo-packages:sync-file');
-const {createCopyInfo} = require('./model');
+const {createFileCopyResult} = require('./model');
 const {SyncMonorepoPackagesError} = require('./error');
 const {findLernaConfig, findDirectoriesByGlobs} = require('./find-package');
 
@@ -168,7 +168,7 @@ exports.syncFile = (
           // - display relative paths to the user for brevity
           //   (we can change this later)
           packageDirs.map((packageDir) =>
-            createCopyInfo(
+            createFileCopyResult(
               srcFilePath,
               path.relative(
                 process.cwd(),
@@ -220,7 +220,7 @@ exports.syncFile = (
  */
 
 /**
- * @typedef {import('./model').CopyInfo} CopyInfo
+ * @typedef {import('./model').FileCopyResult} CopyInfo
  */
 
 /**
