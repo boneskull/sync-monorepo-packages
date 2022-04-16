@@ -55,19 +55,19 @@
     "singleQuote": true
   },
   "dependencies": {
-    "debug": "^4.1.1",
-    "find-up": "^5.0.0",
+    "debug": "4.1.1",
+    "find-up": "5.0.0",
     "fs-extra": "10.0.1",
     "globby": "10.0.2",
-    "log-symbols": "^3.0.0",
-    "pluralize": "^8.0.0",
-    "read-pkg": "^5.2.0",
-    "rfc6902": "^5.0.0",
-    "rxjs": "^7.0.0",
-    "term-size": "^2.1.0",
-    "wrap-ansi": "^6.0.0",
-    "write-pkg": "^4.0.0",
-    "yargs": "^17.4.1"
+    "log-symbols": "3.0.0",
+    "pluralize": "8.0.0",
+    "read-pkg": "5.2.0",
+    "rfc6902": "5.0.0",
+    "rxjs": "7.0.0",
+    "term-size": "2.1.0",
+    "wrap-ansi": "6.0.0",
+    "write-pkg": "4.0.0",
+    "yargs": "17.4.1"
   },
   "devDependencies": {
     "@types/debug": "4.1.7",
