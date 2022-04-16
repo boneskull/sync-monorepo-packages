@@ -7,8 +7,18 @@
       "automerge": true
     },
     {
-      "matchPackagePrefixes": ["@types"],
-      "groupName": "types packages"
+      "matchPackageNames": [
+        "find-up",
+        "globby",
+        "log-symbols",
+        "read-pkg",
+        "term-size",
+        "wrap-ansi",
+        "write-pkg",
+        "@types/wrap-ansi"
+      ],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
     }
   ],
   "semanticCommits": "enabled"
