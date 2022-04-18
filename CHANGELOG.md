@@ -2,12 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-### [0.3.4](https://github.com/boneskull/sync-monorepo-packages/compare/v0.3.3...v0.3.4) (2021-06-15)
-
+### [0.3.5](https://github.com/boneskull/sync-monorepo-packages/compare/v0.3.4...v0.3.5) (2022-04-18)
 
 ### Bug Fixes
 
-* **build:** typescript crap ([f2682fe](https://github.com/boneskull/sync-monorepo-packages/commit/f2682fe497774576f14daebb6c055852fe93d3a1))
+- **util:** fix bad import ([da44c27](https://github.com/boneskull/sync-monorepo-packages/commit/da44c27bfadedcc9d66e47535435a6b91adc893e))
+- update some deps per "npm audit" [security] ([3a8139f](https://github.com/boneskull/sync-monorepo-packages/commit/3a8139ff677667ced37a9d3b9366fb2a2560c1a0))
+
+### [0.3.4](https://github.com/boneskull/sync-monorepo-packages/compare/v0.3.3...v0.3.4) (2021-06-15)
+
+### Bug Fixes
+
+- **build:** typescript crap ([f2682fe](https://github.com/boneskull/sync-monorepo-packages/commit/f2682fe497774576f14daebb6c055852fe93d3a1))
 
 ### [0.3.3](https://github.com/boneskull/sync-monorepo-packages/compare/v0.3.2...v0.3.3) (2021-06-15)
 
