@@ -62,7 +62,7 @@
     "log-symbols": "3.0.0",
     "pluralize": "8.0.0",
     "read-pkg": "5.2.0",
-    "rfc6902": "5.0.0",
+    "rfc6902": "5.0.1",
     "rxjs": "7.5.5",
     "term-size": "2.1.0",
     "wrap-ansi": "7.0.0",
