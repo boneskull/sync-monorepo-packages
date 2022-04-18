@@ -15,7 +15,8 @@
         "term-size",
         "wrap-ansi",
         "write-pkg",
-        "@types/wrap-ansi"
+        "@types/wrap-ansi",
+        "execa"
       ],
       "matchUpdateTypes": ["major"],
       "enabled": false
