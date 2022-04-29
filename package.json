@@ -94,7 +94,7 @@
     "standard-version": "9.3.2",
     "type-fest": "2.12.2",
     "typescript": "4.6.4",
-    "unexpected": "12.0.4"
+    "unexpected": "13.0.0"
   },
   "engines": {
     "node": ">=12"
