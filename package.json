@@ -67,7 +67,7 @@
     "term-size": "2.2.1",
     "wrap-ansi": "7.0.0",
     "write-pkg": "4.0.0",
-    "yargs": "17.4.1"
+    "yargs": "17.6.2"
   },
   "devDependencies": {
     "@types/debug": "4.1.7",
