@@ -2,6 +2,9 @@ name: Node CI
 
 on: [pull_request, push]
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Test on node ${{ matrix.node_version }} and ${{ matrix.os }}
@@ -10,12 +13,17 @@ jobs:
       matrix:
         node_version: [14, 16, 18]
     steps:
-      - uses: actions/checkout@v3
-      - name: Use Node.js ${{ matrix.node_version }}
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@8c91899e586c5b171469028077307d293428b516 # tag=v3
         with:
-          version: ${{ matrix.node_version }}
-      - name: npm install
-        uses: bahmutov/npm-install@v1
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      - name: Install latest npm
+        run: npm install -g npm
+      - name: Install dependencies
+        uses: bahmutov/npm-install@cb39a46f27f14697fec763d60fb23ad347e2befa # tag=v1
+        with:
+          useRollingCache: true
       - name: test
         run: npm test
