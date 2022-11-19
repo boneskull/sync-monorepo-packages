@@ -13,10 +13,10 @@
 
 ## Install
 
-**Requires Node.js v10.0.0 or newer!**
+**Requires Node.js `^14.17.0 || ^16.13.0 || >=18.0.0`**
 
 ```shell
-$ npm install sync-monorepo-packages --save-dev
+npm install sync-monorepo-packages --save-dev
 ```
 
 _or_
