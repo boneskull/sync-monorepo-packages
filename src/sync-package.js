@@ -97,8 +97,7 @@ function applyChanges(dryRun = false) {
               writePkg(
                 pkgChange.pkgPath,
                 /**
-                 * this is horrid, but there's a mismatch here
-                 * @type {import('write-pkg/node_modules/type-fest').JsonObject}
+                 * @type {import('type-fest').JsonObject}
                  */ (pkgChange.newPkg),
                 {normalize: false}
               )
