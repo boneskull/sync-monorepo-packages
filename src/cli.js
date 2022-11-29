@@ -102,7 +102,7 @@ function main() {
               type: 'boolean',
             },
             packages: {
-              defaultDescription: '(use lerna.json)',
+              defaultDescription: '(use workspaces and/or lerna.json)',
               description: 'Dirs/globs containing destination packages',
               nargs: 1,
               normalizePath: true,
@@ -134,7 +134,7 @@ function main() {
               default: true,
             },
             lerna: {
-              description: 'Path to lerna.json',
+              description: 'Path to lerna.json, if any',
               defaultDescription: '(lerna.json in current dir)',
               nargs: 1,
               normalizePath: true,
