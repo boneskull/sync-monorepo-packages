@@ -12,7 +12,8 @@
     "copy",
     "metadata",
     "workflow",
-    "manifest"
+    "manifest",
+    "workspaces"
   ],
   "repository": {
     "type": "git",
