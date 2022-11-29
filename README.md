@@ -1,11 +1,11 @@
 # sync-monorepo-packages
 
-> Synchronizes package.json fields and arbitrary files in a monorepo
+> Synchronizes `package.json` fields and arbitrary files in a monorepo
 
 ## Features
 
-- Auto-discovery of packages via `lerna.json`
-- No Lerna? Manual control of package locations
+- Auto-discovery of packages via `package.json` workspaces and/or `lerna.json`
+- Optional manual control of destination packages
 - Helpful defaults
 - Detailed "dry run" mode
 - Summary of operations
@@ -38,22 +38,22 @@ Positionals:
   file  One or more source files to sync                                [string]
 
 Options:
-  --dry-run, -D      Do not sync; print what would have changed (implies
-                     --verbose)                                        [boolean]
-  --field, --fields  Fields in source package.json to sync     [array] [default:
+      --help             Show help                                     [boolean]
+      --version          Show version number                           [boolean]
+  -D, --dry-run          Do not sync; print what would have changed (implies
+                         --verbose)                                    [boolean]
+  -f, --field, --fields  Fields in source package.json to sync [array] [default:
          ["keywords","author","repository","license","engines","publishConfig"]]
-  --force            Overwrite destination file(s)                     [boolean]
-  --packages, -p     Dirs/globs containing destination packages
-                                             [array] [default: (use lerna.json)]
-  --package-json     Sync package.json                 [boolean] [default: true]
-  --source, -s       Path to source package.json
+      --force            Overwrite destination file(s)                 [boolean]
+  -p, --packages         Dirs/globs containing destination packages
+                           [array] [default: (use workspaces and/or lerna.json)]
+      --package-json     Sync package.json             [boolean] [default: true]
+  -s, --source           Path to source package.json
                                       [string] [default: (closest package.json)]
-  --verbose, -v      Print change details                              [boolean]
-  --summary          Print summary                     [boolean] [default: true]
-  --lerna, -l        Path to lerna.json
+  -v, --verbose          Print change details                          [boolean]
+      --summary          Print summary                 [boolean] [default: true]
+  -l, --lerna            Path to lerna.json, if any
                                  [string] [default: (lerna.json in current dir)]
-  --help             Show help                                         [boolean]
-  --version          Show version number                               [boolean]
 
 Examples:
   sync-monorepo-packages --field keywords   Sync "keywords" and "author" from
@@ -74,7 +74,7 @@ Found a bug? Report it at https://github.com/boneskull/sync-monorepo-packages
 
 - If there are other fields which would make sense to copy as a default, please suggest!
 - Use at your own risk! `--dry-run` is your friend
-- When copying files, directories may be created relative to the dirpath of `lerna.json`. For example, if you want to sync `foo/bar.md` to each package, `packages/*/foo/bar.md` will be the result. This may not work properly with explicitly-specified package directories! Use from project root to be sure.
+- When copying files, directories may be created relative to the dirpath of `lerna.json` or `package.json`. For example, if you want to sync `foo/bar.md` to each package, `packages/*/foo/bar.md` will be the result. This may not work properly with explicitly-specified package directories! Use from project root to be sure.
 - There is an API that you can use. Go for it!
 
 ## License

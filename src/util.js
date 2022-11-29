@@ -18,12 +18,17 @@ exports.pick = function pick(obj, ...keys) {
 
 /**
  * @template T
- * @returns {import('rxjs').UnaryFunction<import('rxjs').Observable<T|null|undefined>, import('rxjs').Observable<T>> }
+ * @returns {import('rxjs').UnaryFunction<Observable<T>, Observable<NonNullable<T>>> }
  */
 exports.filterNullish = function filterNullish() {
   return pipe(
-    /** @type {import('rxjs').OperatorFunction<T|null|undefined, T>} */ (
+    /** @type {import('rxjs').OperatorFunction<T, NonNullable<T>>} */ (
       filter((x) => x != null)
     )
   );
 };
+
+/**
+ * @template T
+ * @typedef {import('rxjs').Observable<T>} Observable
+ */
