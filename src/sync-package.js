@@ -8,7 +8,7 @@ const path = require('path');
 const readPkg = require('read-pkg');
 const writePkg = require('write-pkg');
 const debug = require('debug')('sync-monorepo-packages:sync-package');
-const {findPackageJsons} = require('./find-package');
+const {findPackageJsons, PACKAGE_JSON} = require('./find-package');
 const {createPkgChangeResult} = require('./model');
 
 /**
@@ -132,7 +132,7 @@ exports.summarizePackageChanges = () => (pkgChange$) =>
  * @param {string} pkgPath - User-supplied package path to normalize
  */
 function normalizePkgPath(pkgPath) {
-  return path.basename(pkgPath) === 'package.json'
+  return path.basename(pkgPath) === PACKAGE_JSON
     ? path.dirname(pkgPath)
     : pkgPath;
 }
@@ -148,15 +148,15 @@ exports.syncPackageJsons = ({
   fields = [],
   lerna: lernaJsonPath = '',
 } = {}) => {
-  if (sourcePkgPath && path.basename(sourcePkgPath) !== 'package.json') {
-    sourcePkgPath = path.join(sourcePkgPath, 'package.json');
+  if (sourcePkgPath && path.basename(sourcePkgPath) !== PACKAGE_JSON) {
+    sourcePkgPath = path.join(sourcePkgPath, PACKAGE_JSON);
   }
 
   const sourcePkg$ = iif(
     () => Boolean(sourcePkgPath),
     of(sourcePkgPath),
     defer(() =>
-      from(findUp('package.json')).pipe(
+      from(findUp(PACKAGE_JSON)).pipe(
         tap((pkgJsonPath) => {
           debug('found source package.json at %s', pkgJsonPath);
         }),
