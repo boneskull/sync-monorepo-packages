@@ -1,0 +1,8 @@
+{
+  "name": "root",
+  "private": true,
+  "keywords": ["foo", "bar", "baz"],
+  "workspaces": [
+    "packages/*"
+  ]
+}
