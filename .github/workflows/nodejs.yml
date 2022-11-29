@@ -7,7 +7,7 @@ permissions:
 
 jobs:
   build:
-    name: Test on node ${{ matrix.node_version }} and ${{ matrix.os }}
+    name: Node.js v${{ matrix.node_version }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
