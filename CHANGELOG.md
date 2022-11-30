@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.0.0](https://github.com/boneskull/sync-monorepo-packages/compare/v0.3.5...v1.0.0) (2022-11-30)
+
+
+### ⚠ BREAKING CHANGES
+
+* 
+
+### Features
+
+* add workspace support ([4b37b2a](https://github.com/boneskull/sync-monorepo-packages/commit/4b37b2aad6c7ccdf28900a2ea1ffca479f7fe377))
+
 ### [0.3.5](https://github.com/boneskull/sync-monorepo-packages/compare/v0.3.4...v0.3.5) (2022-04-18)
 
 ### Bug Fixes
