@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.0.0](https://github.com/boneskull/sync-monorepo-packages/compare/v0.3.5...v1.0.0) (2022-11-30)
+
+
+### ⚠ BREAKING CHANGES
+
+* This **changes the default behavior** of `sync-monorepo-packages` to first inspect the `workspaces` field of `package.json` to find target packages.
+
+### Features
+
+* add workspace support ([f5fd068](https://github.com/boneskull/sync-monorepo-packages/commit/f5fd068d53b33e7c190ac770badd3eab4b76ce19))
+
 ### [0.3.5](https://github.com/boneskull/sync-monorepo-packages/compare/v0.3.4...v0.3.5) (2022-04-18)
 
 ### Bug Fixes
