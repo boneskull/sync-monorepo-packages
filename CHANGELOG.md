@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.0.0](https://github.com/boneskull/sync-monorepo-packages/compare/v0.3.5...v1.0.0) (2022-11-30)
+
+
+### ⚠ BREAKING CHANGES
+
+* This **changes the default behavior** of `sync-monorepo-packages` to first inspect the `workspaces` field of `package.json` to find target packages.
+* npm v7 or newer required
+* Supported Node.js versions are now `^14.17.0 || ^16.13.0 || >=18.0.0`
+
+### Features
+
+* add workspace support ([6df68b4](https://github.com/boneskull/sync-monorepo-packages/commit/6df68b44410bdc693c276486e84f888126bd42aa))
+
+
+### Miscellaneous Chores
+
+* drop Node.js v12 support ([5a0b59a](https://github.com/boneskull/sync-monorepo-packages/commit/5a0b59ac1bee92c8d538897d23c39ce3af8779bf))
+* require npm v7 ([b28fd76](https://github.com/boneskull/sync-monorepo-packages/commit/b28fd766c1dca7f87c721e3273c1260a18173e91))
+
 ### [0.3.5](https://github.com/boneskull/sync-monorepo-packages/compare/v0.3.4...v0.3.5) (2022-04-18)
 
 ### Bug Fixes
