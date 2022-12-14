@@ -15,13 +15,15 @@ const fs = require('fs-extra');
 const path = require('path');
 
 const PACKAGE_JSON = 'package.json';
+const LERNA_JSON = 'lerna.json';
 
 /**
  * @param {string} cwd
  * @returns {Observable<string[]>}
  */
 function findWorkspaces(cwd = process.cwd()) {
-  return from(findUp('package.json', {cwd})).pipe(
+  debug('Finding workspaces from %s', cwd);
+  return from(findUp(PACKAGE_JSON, {cwd})).pipe(
     filter(Boolean),
     mergeMap((pkgPath) => from(fs.readJSON(pkgPath))),
     map(
@@ -29,7 +31,7 @@ function findWorkspaces(cwd = process.cwd()) {
        */ (pkg) => pkg.workspaces ?? []
     ),
     tap((value) => {
-      debug('Found workspaces in package.json: %s', value);
+      debug('Found workspaces in %s: %s', PACKAGE_JSON, value);
     })
   );
 }
@@ -46,7 +48,7 @@ function findLernaConfig({cwd = process.cwd(), lernaJsonPath} = {}) {
     iif(
       () => Boolean(lernaJsonPath),
       of(/** @type {string} */ (lernaJsonPath)),
-      from(findUp('lerna.json', {cwd}))
+      from(findUp(LERNA_JSON, {cwd}))
     ).pipe(
       filter(Boolean),
       mergeMap((lernaConfigPath) =>
@@ -146,6 +148,7 @@ function findPackageJsons({
   );
 }
 
+exports.findWorkspaces = findWorkspaces;
 exports.findLernaConfig = findLernaConfig;
 exports.findDirectoriesByGlobs = findDirectoriesByGlobs;
 exports.findPackageJsonsByGlobs = findPackageJsonsByGlobs;

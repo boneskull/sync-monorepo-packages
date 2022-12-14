@@ -12,16 +12,20 @@ const {
   toArray,
   share,
   map,
-  mapTo,
   mergeAll,
   mergeMap,
+  mergeWith,
 } = require('rxjs/operators');
 const path = require('path');
 const glob = require('globby');
 const debug = require('debug')('sync-monorepo-packages:sync-file');
 const {createFileCopyResult} = require('./model');
 const {SyncMonorepoPackagesError} = require('./error');
-const {findLernaConfig, findDirectoriesByGlobs} = require('./find-package');
+const {
+  findLernaConfig,
+  findDirectoriesByGlobs,
+  findWorkspaces,
+} = require('./find-package');
 
 /**
  * For dry-run mode, if a file were to be copied, but force is
@@ -147,8 +151,14 @@ exports.syncFile = (
     () => Boolean(packages.length),
     from(packages),
     findLernaConfig({lernaJsonPath}).pipe(
+      filter(({lernaConfig}) => Boolean(lernaConfig.packages)),
       mergeMap(({lernaConfig, lernaRoot: cwd}) =>
         findDirectoriesByGlobs(lernaConfig.packages, {cwd})
+      ),
+      mergeWith(
+        findWorkspaces(cwd).pipe(
+          mergeMap((workspaces) => findDirectoriesByGlobs(workspaces, {cwd}))
+        )
       )
     )
   ).pipe(
@@ -192,7 +202,7 @@ exports.syncFile = (
             dryRunTestFile(copyInfo, force),
             defer(() =>
               from(fs.copy(copyInfo.from, copyInfo.to, {overwrite: force}))
-            ).pipe(mapTo(copyInfo))
+            ).pipe(map(() => copyInfo))
           ).pipe(
             map((copyInfo) => copyInfo.withSuccess()),
             catchError((err) => {
