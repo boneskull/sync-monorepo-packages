@@ -1,6 +1,6 @@
 {
   "name": "sync-monorepo-packages",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Synchronize files and metadata across packages in a monorepo",
   "keywords": [
     "lerna",
