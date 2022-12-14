@@ -32,6 +32,7 @@
   ],
   "scripts": {
     "build": "tsc",
+    "commitlint": "commitlint",
     "lint": "eslint .",
     "lint-staged": "lint-staged",
     "lint:md": "markdownlint README.md",
