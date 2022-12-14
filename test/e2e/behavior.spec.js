@@ -51,49 +51,80 @@ describe('sync-monorepo-packages', function () {
 
   for (const [title, fixturePath] of Object.entries(FIXTURES)) {
     describe(title, function () {
-      describe('sync fields', function () {
-        /**
-         * @type {string}
-         */
-        let tempDir;
+      /**
+       * @type {string}
+       */
+      let tempDir;
+
+      beforeEach(async function () {
+        tempDir = path.join(
+          await fs.mkdtemp(path.join(os.tmpdir(), 'sync-monorepo-packages-')),
+          path.basename(fixturePath)
+        );
+        await fs.copy(fixturePath, tempDir, {
+          recursive: true,
+        });
+      });
+
+      afterEach(async function () {
+        await fs.remove(tempDir);
+      });
+
+      describe('default behavior', function () {
+        /** @type {import('execa').ExecaReturnValue<string>} */
+        let result;
 
         beforeEach(async function () {
-          tempDir = path.join(
-            await fs.mkdtemp(path.join(os.tmpdir(), 'sync-monorepo-packages-')),
-            path.basename(fixturePath)
+          result = await run([], {cwd: tempDir});
+          await expect(result, 'to satisfy', {
+            exitCode: 0,
+          });
+        });
+
+        it('should report that package.json files were synced', function () {
+          expect(result, 'to satisfy', {
+            stdout: /synced 2 package.json files/i,
+          });
+        });
+
+        it('should actually sync the package.json files', async function () {
+          const [monorepoJson, barJson, fooJson] = await Promise.all([
+            fs.readJson(path.join(tempDir, 'package.json')),
+            fs.readJson(path.join(tempDir, 'packages', 'bar', 'package.json')),
+            fs.readJson(path.join(tempDir, 'packages', 'foo', 'package.json')),
+          ]);
+          expect(barJson, 'to equal', fooJson);
+          expect(barJson, 'to have property', 'keywords');
+          expect(monorepoJson.keywords, 'to equal', barJson.keywords);
+        });
+      });
+
+      describe('--no-package-json', function () {
+        /** @type {import('execa').ExecaReturnValue<string>} */
+        let result;
+
+        beforeEach(async function () {
+          result = await run(['--no-package-json', 'LICENSE'], {
+            cwd: tempDir,
+          });
+          await expect(result, 'to satisfy', {exitCode: 0});
+        });
+        it('should not sync package.json files', async function () {
+          const [barJson, fooJson] = await Promise.all([
+            fs.readJson(path.join(tempDir, 'packages', 'bar', 'package.json')),
+            fs.readJson(path.join(tempDir, 'packages', 'foo', 'package.json')),
+          ]);
+          expect({...fooJson, ...barJson}, 'to be empty');
+        });
+        it('should copy files', async function () {
+          console.dir(result);
+          await expect(
+            Promise.all([
+              fs.stat(path.join(tempDir, 'packages', 'foo', 'LICENSE')),
+              fs.stat(path.join(tempDir, 'packages', 'bar', 'LICENSE')),
+            ]),
+            'to be fulfilled'
           );
-          await fs.copy(fixturePath, tempDir, {
-            recursive: true,
-          });
-        });
-
-        afterEach(async function () {
-          await fs.remove(tempDir);
-        });
-
-        describe('default behavior', function () {
-          it('should report that package.json files were synced', async function () {
-            return expect(
-              run([], {cwd: tempDir}),
-              'to be fulfilled with value satisfying',
-              {stdout: /synced 2 package.json files/i}
-            );
-          });
-
-          it('should actually sync the package.json files', async function () {
-            await run([], {cwd: tempDir});
-            const [monorepoJson, barJson, fooJson] = await Promise.all([
-              fs.readJson(path.join(tempDir, 'package.json')),
-              fs.readJson(
-                path.join(tempDir, 'packages', 'bar', 'package.json')
-              ),
-              fs.readJson(
-                path.join(tempDir, 'packages', 'foo', 'package.json')
-              ),
-            ]);
-            expect(barJson, 'to equal', fooJson);
-            expect(monorepoJson.keywords, 'to equal', barJson.keywords);
-          });
         });
       });
     });
