@@ -58,7 +58,7 @@
   "dependencies": {
     "debug": "4.3.4",
     "find-up": "5.0.0",
-    "fs-extra": "11.1.0",
+    "fs-extra": "11.1.1",
     "globby": "10.0.2",
     "log-symbols": "3.0.0",
     "pluralize": "8.0.0",
