@@ -64,7 +64,7 @@
     "pluralize": "8.0.0",
     "read-pkg": "5.2.0",
     "rfc6902": "5.0.1",
-    "rxjs": "7.8.0",
+    "rxjs": "7.8.1",
     "term-size": "2.2.1",
     "wrap-ansi": "7.0.0",
     "write-pkg": "4.0.0",
