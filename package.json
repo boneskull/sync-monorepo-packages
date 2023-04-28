@@ -68,7 +68,7 @@
     "term-size": "2.2.1",
     "wrap-ansi": "7.0.0",
     "write-pkg": "4.0.0",
-    "yargs": "17.7.1"
+    "yargs": "17.7.2"
   },
   "devDependencies": {
     "@commitlint/cli": "17.6.1",
