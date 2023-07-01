@@ -81,7 +81,7 @@
     "@types/sinon": "10.0.15",
     "@types/wrap-ansi": "3.0.0",
     "@types/yargs": "17.0.24",
-    "eslint": "8.43.0",
+    "eslint": "8.44.0",
     "eslint-config-prettier": "8.8.0",
     "eslint-config-standard": "17.1.0",
     "eslint-plugin-import": "2.27.5",
