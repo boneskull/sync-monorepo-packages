@@ -80,7 +80,7 @@
     "@types/pluralize": "0.0.31",
     "@types/sinon": "10.0.16",
     "@types/wrap-ansi": "3.0.0",
-    "@types/yargs": "17.0.24",
+    "@types/yargs": "17.0.25",
     "eslint": "8.50.0",
     "eslint-config-prettier": "8.10.0",
     "eslint-config-standard": "17.1.0",
