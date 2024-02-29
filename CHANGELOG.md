@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.0.3](https://github.com/boneskull/sync-monorepo-packages/compare/v1.0.2...v1.0.3) (2023-10-23)
+
+
+### Bug Fixes
+
+* **deps:** update dependency fs-extra to v11.1.1 ([3bb04f5](https://github.com/boneskull/sync-monorepo-packages/commit/3bb04f5a6d26a5a9fc4bcfb92d53f9ea8b04134f))
+* **deps:** update dependency rxjs to v7.8.0 ([90f5d20](https://github.com/boneskull/sync-monorepo-packages/commit/90f5d2065ce56965956a291e3cc218d3a39db852))
+* **deps:** update dependency rxjs to v7.8.1 ([fb4c1d2](https://github.com/boneskull/sync-monorepo-packages/commit/fb4c1d209bd5fa199d900d4e6644fc14f8d454c1))
+* **deps:** update dependency yargs to v17.7.0 ([9f3d3e7](https://github.com/boneskull/sync-monorepo-packages/commit/9f3d3e71d5181c5a47041db991c92fbefdb48952))
+* **deps:** update dependency yargs to v17.7.1 ([efc9772](https://github.com/boneskull/sync-monorepo-packages/commit/efc977241ce903dd47a01a33a51fce2c4ed35055))
+* **deps:** update dependency yargs to v17.7.2 ([8698412](https://github.com/boneskull/sync-monorepo-packages/commit/86984123bdc539f9c3fca5ffbb7ec954cff36104))
+
 ## [1.0.2](https://github.com/boneskull/sync-monorepo-packages/compare/v1.0.1...v1.0.2) (2022-12-14)
 
 
