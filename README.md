@@ -13,7 +13,7 @@
 
 ## Install
 
-**Requires Node.js `^14.17.0 || ^16.13.0 || >=18.0.0`**
+**Requires Node.js `>=22.5.1`**
 
 ```shell
 npm install sync-monorepo-packages --save-dev
