@@ -1,0 +1,19 @@
+description: Prepares the repo for a typical CI job
+
+name: Prepare
+inputs:
+  node-version: # id of input
+    description: 'Node.js version'
+    required: false
+    default: '24'
+
+runs:
+  steps:
+    - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6
+      with:
+        node-version: ${{ inputs.node-version }}
+    - name: Install dependencies
+      uses: bahmutov/npm-install@3e063b974f0d209807684aa23e534b3dde517fd9 # v1.11.2
+      with:
+        install-command: npm ci --foreground-scripts
+  using: composite

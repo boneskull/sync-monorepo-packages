@@ -1,7 +1,32 @@
 {
   "name": "sync-monorepo-packages",
-  "version": "1.0.2",
+  "version": "2.0.0",
+  "type": "module",
   "description": "Synchronize files and metadata across packages in a monorepo",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/boneskull/sync-monorepo-packages"
+  },
+  "author": "Christopher Hiller <boneskull@boneskull.com> (https://boneskull.com/)",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22.5.1",
+    "npm": ">7"
+  },
+  "bin": {
+    "sync-monorepo-packages": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "keywords": [
     "lerna",
     "monorepo",
@@ -15,94 +40,99 @@
     "manifest",
     "workspaces"
   ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/boneskull/sync-monorepo-packages"
-  },
-  "license": "Apache-2.0",
-  "author": "Christopher Hiller <boneskull@boneskull.com> (https://boneskull.com/)",
-  "main": "src/index.js",
-  "types": "types/src/index.d.ts",
-  "bin": {
-    "sync-monorepo-packages": "src/cli.js"
-  },
-  "files": [
-    "src",
-    "types/src/*.d.ts"
-  ],
   "scripts": {
     "build": "tsc",
     "commitlint": "commitlint",
-    "lint": "eslint .",
+    "fix": "npm run fix:eslint && npm run fix:prettier && npm run fix:markdown",
+    "fix:eslint": "eslint --fix .",
+    "fix:markdown": "markdownlint-cli2 --fix \"**/*.md\"",
+    "fix:pkg": "npm pkg fix",
+    "fix:prettier": "prettier --write .",
+    "lint": "npm run lint:eslint && npm run lint:types && npm run lint:prettier && npm run lint:spelling && npm run lint:knip && npm run lint:markdown",
     "lint-staged": "lint-staged",
-    "lint:md": "markdownlint README.md",
-    "prepare": "husky install && npm run build",
+    "lint:eslint": "eslint .",
+    "lint:knip": "knip",
+    "lint:markdown": "markdownlint-cli2 \"**/*.md\"",
+    "lint:prettier": "prettier --check .",
+    "lint:spelling": "cspell . \"./.*/**\"",
+    "lint:types": "tsc --noEmit --project tsconfig.test.json",
+    "prepare": "husky",
     "prepublishOnly": "npm run build",
-    "prerelease": "npm test",
-    "test": "npm run test:e2e && npm run build && npm run lint && npm run lint:md",
-    "test:e2e": "mocha test/e2e"
+    "test": "node --test --import tsx \"test/**/*.test.ts\"",
+    "test:watch": "node --test --import tsx --watch \"test/**/*.test.ts\""
+  },
+  "dependencies": {
+    "@boneskull/bargs": "4.1.0",
+    "debug": "4.4.3",
+    "log-symbols": "7.0.1",
+    "rfc6902": "5.2.0",
+    "wrap-ansi": "10.0.0"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "21.0.1",
+    "@commitlint/config-conventional": "21.0.1",
+    "@eslint/js": "9.39.4",
+    "@stylistic/eslint-plugin": "5.10.0",
+    "@types/debug": "4.1.13",
+    "@types/node": "25.9.1",
+    "bupkis": "0.18.1",
+    "cspell": "10.0.0",
+    "eslint": "9.39.4",
+    "eslint-plugin-jsonc": "3.1.2",
+    "eslint-plugin-perfectionist": "5.9.0",
+    "globals": "17.6.0",
+    "husky": "9.1.7",
+    "knip": "6.14.1",
+    "lint-staged": "17.0.5",
+    "markdownlint-cli2": "0.22.1",
+    "markdownlint-cli2-formatter-pretty": "0.0.10",
+    "prettier": "3.8.3",
+    "prettier-plugin-jsdoc": "1.8.0",
+    "prettier-plugin-pkg": "0.22.1",
+    "tsx": "4.22.3",
+    "type-fest": "5.6.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.59.4"
+  },
+  "knip": {
+    "ignoreDependencies": [
+      "markdownlint-cli2-formatter-pretty"
+    ],
+    "ignore": [
+      "dist/**",
+      ".worktrees/**/*"
+    ],
+    "tags": [
+      "-knipignore"
+    ]
   },
   "lint-staged": {
-    "*.js": [
-      "eslint --fix"
+    "*.{ts,js,yml,json5}": [
+      "eslint --fix",
+      "prettier --write",
+      "cspell --no-summary"
     ],
-    "*.{yml,md}": [
-      "prettier --write"
+    "!(package-lock).json": [
+      "eslint --fix",
+      "prettier --write",
+      "cspell --no-summary"
+    ],
+    "*.md": [
+      "markdownlint-cli2 --fix",
+      "prettier --write",
+      "cspell --no-summary"
     ]
   },
   "prettier": {
     "bracketSpacing": false,
     "endOfLine": "auto",
-    "singleQuote": true
-  },
-  "dependencies": {
-    "debug": "4.3.4",
-    "find-up": "5.0.0",
-    "fs-extra": "11.1.1",
-    "globby": "10.0.2",
-    "log-symbols": "3.0.0",
-    "pluralize": "8.0.0",
-    "read-pkg": "5.2.0",
-    "rfc6902": "5.0.1",
-    "rxjs": "7.8.1",
-    "term-size": "2.2.1",
-    "wrap-ansi": "7.0.0",
-    "write-pkg": "4.0.0",
-    "yargs": "17.7.2"
-  },
-  "devDependencies": {
-    "@commitlint/cli": "17.8.1",
-    "@commitlint/config-conventional": "17.8.1",
-    "@types/debug": "4.1.10",
-    "@types/fs-extra": "9.0.13",
-    "@types/mocha": "10.0.3",
-    "@types/node": "18.18.6",
-    "@types/pluralize": "0.0.32",
-    "@types/sinon": "10.0.20",
-    "@types/wrap-ansi": "3.0.0",
-    "@types/yargs": "17.0.29",
-    "eslint": "8.52.0",
-    "eslint-config-prettier": "8.10.0",
-    "eslint-config-standard": "17.1.0",
-    "eslint-plugin-import": "2.29.0",
-    "eslint-plugin-n": "15.7.0",
-    "eslint-plugin-prettier": "4.2.1",
-    "eslint-plugin-promise": "6.1.1",
-    "execa": "5.1.1",
-    "husky": "8.0.3",
-    "lint-staged": "13.3.0",
-    "markdownlint-cli": "0.37.0",
-    "mocha": "10.2.0",
-    "prettier": "2.8.8",
-    "type-fest": "3.13.1",
-    "typescript": "4.7.4",
-    "unexpected": "13.2.1"
-  },
-  "engines": {
-    "node": ">=22.5.1",
-    "npm": ">7"
-  },
-  "overrides": {
-    "type-fest": "$type-fest"
+    "singleQuote": true,
+    "plugins": [
+      "prettier-plugin-jsdoc",
+      "prettier-plugin-pkg"
+    ],
+    "jsdocCommentLineStrategy": "keep",
+    "jsdocPreferCodeFences": true,
+    "tsdoc": true
   }
 }

@@ -5,6 +5,10 @@ on: [pull_request, push]
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Node.js v${{ matrix.node_version }}

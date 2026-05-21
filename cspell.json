@@ -1,0 +1,46 @@
+{
+  "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/packages/cspell-types/cspell.schema.json",
+  "allowCompoundWords": true,
+  "caseSensitive": false,
+  "dictionaries": [
+    "companies",
+    "css",
+    "en_US",
+    "filetypes",
+    "fonts",
+    "html",
+    "misc",
+    "node",
+    "npm",
+    "softwareTerms",
+    "typescript"
+  ],
+  "ignorePaths": [
+    ".coverage",
+    ".tmp",
+    ".vscode",
+    "*.snapshot",
+    "*.svg",
+    "CHANGELOG.md",
+    "coverage",
+    "dist",
+    "docs",
+    "node_modules",
+    "worktrees",
+    ".git"
+  ],
+  "ignoreRandomStrings": true,
+  "ignoreWords": [
+    "boneskull",
+    "wagoid",
+    "zshy",
+    "toshimaru",
+    "pids",
+    "jscoverage",
+    "wscript",
+    "bahmutov",
+    "huskyrc",
+    "commitlintrc"
+  ],
+  "words": ["shankle", "picanha", "bupkis", "andouille", "bargs", "Jsons"]
+}

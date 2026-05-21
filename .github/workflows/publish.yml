@@ -1,0 +1,28 @@
+name: Publish to npm
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    env:
+      token: ${{ secrets.NPM_TOKEN }}
+    runs-on: ubuntu-latest
+    steps:
+      - if: ${{ env.token == '' }}
+        run: echo "NPM_TOKEN is not set"
+      - if: ${{ env.token != '' }}
+        name: Checkout Repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - if: ${{ env.token != '' }}
+        uses: ./.github/actions/publish
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
