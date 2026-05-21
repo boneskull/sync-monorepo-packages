@@ -1,0 +1,39 @@
+name: Publish
+description: Publish workspaces to npm
+
+inputs:
+  token:
+    description: 'npm token'
+    required: true
+  paths-released:
+    description: 'JSON array of workspace paths to publish (from release-please paths_released output)'
+    required: true
+
+runs:
+  steps:
+    # see https://github.com/google-github-actions/release-please-action#automating-publication-to-npm
+    # see https://docs.npmjs.com/generating-provenance-statements
+    - name: Checkout Repository
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+    - name: Setup Node.js
+      uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+      with:
+        node-version: 24.12.0
+        registry-url: https://registry.npmjs.org
+    - name: Install & Build
+      uses: bahmutov/npm-install@3e063b974f0d209807684aa23e534b3dde517fd9 # v1.11.2
+    - name: Publish workspaces to npm
+      env:
+        NODE_AUTH_TOKEN: ${{ inputs.token }}
+      run: |
+        paths='${{ inputs.paths-released }}'
+        if [ -z "$paths" ] || [ "$paths" = "[]" ]; then
+          echo "No paths to publish, nothing to do."
+          exit 0
+        fi
+        for path in $(echo "$paths" | jq -r '.[]'); do
+          echo "Publishing workspace at $path..."
+          npm publish --workspace="$path" --access public
+        done
+      shell: bash
+  using: composite

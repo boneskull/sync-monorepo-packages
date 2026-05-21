@@ -19,63 +19,79 @@
 npm install sync-monorepo-packages --save-dev
 ```
 
-_or_
+or
 
 ```shell
-$ npx sync-monorepo-packages --help
+npx sync-monorepo-packages --help
 ```
 
 ## Usage
 
-Here, I have pasted the output of `--help` because I am lazy:
+### CLI
 
 ```plain
-sync-monorepo-packages [file..]
+sync-monorepo-packages v3.0.0
+  Synchronize files and metadata across packages in a monorepo
 
-Synchronize files and metadata across packages in a monorepo
+USAGE
+  $ sync-monorepo-packages [options]
 
-Positionals:
-  file  One or more source files to sync                                [string]
+OPTIONS
+  -D, --dry-run          Do not sync; print what would have changed (implies --verbose)  [boolean]
+  -f, --fields, --field  Fields in source package.json to sync  [string[]] default: ["keywords","author","repository","license","engines","publishConfig"]
+      --force            Overwrite destination file(s)  [boolean]
+  -l, --lerna            Path to lerna.json, if any  [string]
+      --no-package-json  Sync package.json  [boolean] default: true
+  -p, --packages         Dirs/globs containing destination packages  [string[]]
+  -s, --source           Path to source package.json  [string]
+      --no-summary       Print summary  [boolean] default: true
+  -v, --verbose          Print change details  [boolean]
+  -h, --help             Show help information  [boolean]
+      --version          Show version number  [boolean]
+```
 
-Options:
-      --help             Show help                                     [boolean]
-      --version          Show version number                           [boolean]
-  -D, --dry-run          Do not sync; print what would have changed (implies
-                         --verbose)                                    [boolean]
-  -f, --field, --fields  Fields in source package.json to sync [array] [default:
-         ["keywords","author","repository","license","engines","publishConfig"]]
-      --force            Overwrite destination file(s)                 [boolean]
-  -p, --packages         Dirs/globs containing destination packages
-                           [array] [default: (use workspaces and/or lerna.json)]
-      --package-json     Sync package.json             [boolean] [default: true]
-  -s, --source           Path to source package.json
-                                      [string] [default: (closest package.json)]
-  -v, --verbose          Print change details                          [boolean]
-      --summary          Print summary                 [boolean] [default: true]
-  -l, --lerna            Path to lerna.json, if any
-                                 [string] [default: (lerna.json in current dir)]
+### API
 
-Examples:
-  sync-monorepo-packages --field keywords   Sync "keywords" and "author" from
-  --field author -s ./foo/package.json      ./foo/package.json to packages found
-                                            in lerna.json
-  sync-monorepo-packages --packages ./foo   Using default fields, show what
-  --dry-run --no-summary                    would have synced from package.json
-                                            in current dir to packages in ./foo;
-                                            hide summary
-  sync-monorepo-packages --no-package-json  Sync ./README.md to each package
-  ./README.md                               found in lerna.json. Do not sync
-                                            anything in package.json
+The library exports async generator functions that stream results as they happen:
 
-Found a bug? Report it at https://github.com/boneskull/sync-monorepo-packages
+```typescript
+import {
+  syncPackageJsons,
+  summarizePackageChanges,
+  syncFile,
+  summarizeFileCopies,
+} from 'sync-monorepo-packages';
+
+// Sync package.json fields
+const pkgResults = [];
+for await (const change of syncPackageJsons({dryRun: true})) {
+  console.log(change.toString());
+  pkgResults.push(change);
+}
+const summary = summarizePackageChanges(pkgResults);
+if (summary.success) console.log(summary.success);
+
+// Sync arbitrary files
+const fileResults = [];
+for await (const result of syncFile(['LICENSE', 'README.md'])) {
+  fileResults.push(result);
+}
+const fileSummary = summarizeFileCopies(fileResults);
+if (fileSummary.success) console.log(fileSummary.success);
 ```
 
 ## Notes
 
 - If there are other fields which would make sense to copy as a default, please suggest!
 - Use at your own risk! `--dry-run` is your friend
-- When copying files, directories may be created relative to the dirpath of `lerna.json` or `package.json`. For example, if you want to sync `foo/bar.md` to each package, `packages/*/foo/bar.md` will be the result. This may not work properly with explicitly-specified package directories! Use from project root to be sure.
-- There is an API that you can use. Go for it!
+- When copying files, directories may be created relative to the dirpath of `lerna.json` or `package.json`. For example, if you want to sync `foo/bar.md` to each package, `packages/*/foo/bar.md` will be the result.
+
+## Breaking Changes in v3.0.0
+
+- **ESM only.** No CommonJS build. Use `import` instead of `require`.
+- **RxJS removed.** The public API is now async iterables (`AsyncGenerator<T>`) instead of RxJS `Observable<T>`. The `summarize*` functions now accept `T[]` arrays and return a single `Summary` object.
+- **`yargs` replaced by `@boneskull/bargs`.** No user-visible differences; same flags supported.
+- Node.js ≥ 22.5.1 required (was ≥ 18).
 
 ## License
 
