@@ -26,4 +26,3 @@ jobs:
         uses: ./.github/actions/publish
         with:
           token: ${{ secrets.NPM_TOKEN }}
-          paths-released: ${{ steps.release.outputs.paths_released }}

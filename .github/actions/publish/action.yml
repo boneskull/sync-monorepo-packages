@@ -5,9 +5,6 @@ inputs:
   token:
     description: 'npm token'
     required: true
-  paths-released:
-    description: 'JSON array of workspace paths to publish (from release-please paths_released output)'
-    required: true
 
 runs:
   steps:
@@ -25,15 +22,6 @@ runs:
     - name: Publish workspaces to npm
       env:
         NODE_AUTH_TOKEN: ${{ inputs.token }}
-      run: |
-        paths='${{ inputs.paths-released }}'
-        if [ -z "$paths" ] || [ "$paths" = "[]" ]; then
-          echo "No paths to publish, nothing to do."
-          exit 0
-        fi
-        for path in $(echo "$paths" | jq -r '.[]'); do
-          echo "Publishing workspace at $path..."
-          npm publish --workspace="$path" --access public
-        done
+      run: npm publish --access=public --registry=https://registry.npmjs.org
       shell: bash
   using: composite
