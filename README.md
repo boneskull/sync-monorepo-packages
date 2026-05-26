@@ -30,7 +30,7 @@ npx sync-monorepo-packages --help
 ### CLI
 
 ```plain
-sync-monorepo-packages v3.0.0
+sync-monorepo-packages v2.0.0
   Synchronize files and metadata across packages in a monorepo
 
 USAGE
@@ -86,7 +86,7 @@ if (fileSummary.success) console.log(fileSummary.success);
 - Use at your own risk! `--dry-run` is your friend
 - When copying files, directories may be created relative to the dirpath of `lerna.json` or `package.json`. For example, if you want to sync `foo/bar.md` to each package, `packages/*/foo/bar.md` will be the result.
 
-## Breaking Changes in v3.0.0
+## Breaking Changes in v2.0.0
 
 - **ESM only.** No CommonJS build. Use `import` instead of `require`.
 - **RxJS removed.** The public API is now async iterables (`AsyncGenerator<T>`) instead of RxJS `Observable<T>`. The `summarize*` functions now accept `T[]` arrays and return a single `Summary` object.
