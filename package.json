@@ -83,7 +83,7 @@
     "globals": "17.9.0",
     "husky": "9.1.7",
     "knip": "6.31.0",
-    "lint-staged": "17.0.5",
+    "lint-staged": "17.3.0",
     "markdownlint-cli2": "0.22.1",
     "markdownlint-cli2-formatter-pretty": "0.0.10",
     "prettier": "3.8.3",
