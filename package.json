@@ -76,7 +76,7 @@
     "@types/debug": "4.1.13",
     "@types/node": "25.9.5",
     "bupkis": "0.18.1",
-    "cspell": "10.1.0",
+    "cspell": "10.1.1",
     "eslint": "9.39.5",
     "eslint-plugin-jsonc": "3.4.2",
     "eslint-plugin-perfectionist": "5.10.1",
