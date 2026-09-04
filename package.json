@@ -79,7 +79,7 @@
     "cspell": "10.2.0",
     "eslint": "9.39.5",
     "eslint-plugin-jsonc": "3.4.2",
-    "eslint-plugin-perfectionist": "5.10.1",
+    "eslint-plugin-perfectionist": "5.11.0",
     "globals": "17.11.0",
     "husky": "9.1.7",
     "knip": "6.33.0",
