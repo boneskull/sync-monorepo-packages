@@ -69,8 +69,8 @@
     "wrap-ansi": "10.0.1"
   },
   "devDependencies": {
-    "@commitlint/cli": "21.2.2",
-    "@commitlint/config-conventional": "21.2.2",
+    "@commitlint/cli": "21.2.3",
+    "@commitlint/config-conventional": "21.2.3",
     "@eslint/js": "9.39.5",
     "@stylistic/eslint-plugin": "5.10.0",
     "@types/debug": "4.1.13",
